@@ -1,0 +1,538 @@
+﻿
+
+1.가상 머신 생성 & OS설치 
+ - 주의 사항 : 가상머신 생성 경로 -> 개인 폴더 \ Sever-A \ 
+ 
+	(1) Server-A  		1P/1C	  HDD 20GB 	RAM 1GB  CentOS 6.9
+				        IP 100.100.100.110 
+	기본 세팅
+		#yum -y install vim					// vim 패키지 설치 
+		#yum -y install lrzsz				// 파일 전송 패키지 설치 
+		#vi /etc/bashrc						// 로그인 시 실행되는 파일
+		alias grep="grep --color=auto"		// grep 하일라이트 
+		alias vi="vim"						// vim 사용 
+	모든 설정 완료되면 셧다운 후에 스냅샷
+	
+	
+	가상머신생성-> 운영체제 설치-> IP주소 설정-> 원격접속
+	
+	
+	사용자 계정 관리
+	
+	#useradd [옵션] [계정명]	
+		사용자 계정 추가
+		옵션 -c Comment
+		     -u UID
+			 -g GID		(주 그룹)
+			 -G GROUP	(보조 그룹) 
+			 -s Shell 
+	
+	계정명 	JISOO		그룹명 BLACKPINK
+			JENNY			   BTS 
+			ROSE
+			RISA
+	
+	#useradd JISOO-1 			// 사용자 계정 추가
+	#cat /etc/passwd			// 사용자 계정 추가 확인
+	
+	JISOO-1:x:500:500::/home/JISOO-1:/bin/bash
+	
+	계정명     : JISOO-1
+	패스워드   : X -> 패스워드가 /etc/shadow 파일에 저장
+	UID        : 500		// /etc/login.defs UID_MIN 500
+	GID        : 500						   GID_MIN 500
+	코멘트     : 없음
+	홈디렉토리 : /home/JISOO-1 
+				 // /etc/login.defs        CREATE_HOME yes 
+				 // /etc/default/useradd   HOME=/home
+	로그인 쉘  : /bin/bash
+				 // /etc/default/useradd   SEHLL=/bin/bash
+	
+	#useradd JISOO-2
+	#cat /etc/passwd 
+	~~~생략~~~~~
+	JISOO-1:x:500:500::/home/JISOO-1:/bin/bash
+	JISOO-2:x:501:501::/home/JISOO-2:/bin/bash
+
+	- 사용자 계정 추가하면 passwd 파일 하단에 추가
+		#cat /etc/passwd | tail -2
+	- UID, GID 1씩 증가
+	
+	#useradd -u 555 JISOO-3
+	#cat /etc/passwd | tail -3
+	JISOO-1:x:500:500::/home/JISOO-1:/bin/bash
+	JISOO-2:x:501:501::/home/JISOO-2:/bin/bash
+	JISOO-3:x:555:555::/home/JISOO-3:/bin/bash
+
+	#useradd JISOO-4
+	#cat /etc/passwd | tail -4
+	JISOO-1:x:500:500::/home/JISOO-1:/bin/bash
+	JISOO-2:x:501:501::/home/JISOO-2:/bin/bash
+	JISOO-3:x:555:555::/home/JISOO-3:/bin/bash
+	JISOO-4:x:556:556::/home/JISOO-4:/bin/bash
+	- 마지막에 추가된 UID에서 1씩 증가한다.
+	
+	#useradd [옵션] [계정명]	
+		사용자 계정 추가
+		옵션 -c Comment
+		     -u UID
+			 -g GID		(주 그룹)					
+			 -G GROUP	(보조 그룹) 
+			 -s Shell 
+	
+	JISOO-5 계정을 추가, 단 해당 사용자는 /bin/bash를 제외한
+	다른 쉘을 사용하도록 설정 ( 사용할 수 있는 쉘 /etc/shells )
+	#cat /etc/shells
+	/bin/sh				
+	/bin/bash
+	/sbin/nologin
+	/bin/dash
+
+	#useradd -s /bin/dash JISOO-5
+	#cat /etc/passwd | tail -1
+	JISOO-5:x:557:557::/home/JISOO-5:/bin/dash	<- 쉘
+	#su - JISOO-5			// 사용자 계정 전환
+	$exit
+	
+	#useradd -D 기존 설정 변경 (/etc/default/useradd)
+	- 명령어를 이용하여 /etc/default/useradd 파일의 내용을
+	  변경한다.
+	  
+	#useradd -D
+	#useradd -D -b [홈 디렉토리 경로] 	
+	// 기본 홈 디렉토리 경로를 변경
+	#mkdir /sub_home
+	#cd /home
+	
+	#useradd -D -b /sub_home
+	#useradd -D
+	HOME=/sub_home
+	#useradd JISOO-6
+	#cat /etc/passwd | tail -1		// 홈디렉토리 경로 확인
+	
+	원상 복구
+	#vi /etc/default/useradd
+	HOME=/sub_home   		-> 		/home
+	#useradd -D
+	HOME=/home
+	
+	// -D 와 함께 쓸 수 있는 옵션 man 명령어를 통해 확인해보기
+	
+	usermod - 사용자 정보 수정
+		#usermod [옵션] [계정명]
+		옵션
+			-c Comment
+			-u UID			-s shell
+			-g GID          -l 계정명 변경
+			-G GROUP
+	1. JISOO-5 계정의 코멘트 정보를 정보를 변경
+		-> BLACKPINK
+	2. JISOO-5 계정이 사용하는 쉘
+		-> /bin/bash
+	3. 두 가지 정보가 변경되었는지 확인	
+	
+	#usermod -c BLACKPINK -s /bin/bash JISOO-5
+	#cat /etc/passwd | grep JISOO-5
+	
+	#userdel - 계정 삭제
+		#userdel [계정명]
+		
+		#userdel JISOO-1
+		// JISOO-1 계정 삭제
+		
+		#cd /home
+		#ls
+		JISOO-1 JISOO-2 JISOO-3 ... JISOO-6
+		
+		// userdel 명령어는 사용자 계정은 삭제해주지만,
+		   홈디렉토리까지는 삭제가 되지 않는다.
+		
+		// 이러한 경우에는 수동으로 홈디렉토리를 삭제해야한다.
+		
+		// 홈디렉토리에는 사용자가 사용하던 파일들이 존재하기 때문에 홈디렉토리는 유지하는 것이 기본값이다.
+		
+		// 홈디렉토리와 메일 박스 파일까지 한번에 삭제할 경우
+		   -r 옵션을 사용한다.
+		
+		#userdel -r JISOO-2
+		// 계정 및 홈디렉토리를 포함하여 모두 삭제
+		
+		/etc/skel
+			- 사용자 계정 추가 시 홈디렉토리에 복사가될
+			  파일이 위치한 디렉토리
+			  
+		#useradd JISOO-8
+		#cd /home/JISOO-8
+		#ls		// 파일 없음
+		
+		#cd /etc/skel
+		#ls		// 파일 없음
+		#touch skel_test		// 테스트 용 파일 생성
+		
+		#useradd JISOO-9
+		#cd /home/JISOO-9
+		#ls
+		
+		실습에 추가했던 모든 계정을 삭제.
+		- 단 홈디렉토리를 포함하여 모두 삭제
+		
+		#passwd - 패스워드 설정
+		(1) #passwd				// 현재 로그인한 사용자의 패스워드 변경
+		(2) #passwd [계정명] 	// 특정 계정의 패스워드를 변경
+								   (root만 사용이 가능)
+				옵션 -l (lock)	 잠금
+				     -u (unlock) 잠금해제 
+					 -d (delete) 패스워드 제거
+					 
+		#useradd JISOO
+		#passwd JISOO			// 암호 123
+		JISOO 사용자의 비밀 번호 변경 중
+		새  암호:
+		잘못된 암호: 너무 짧습니다  	// 5글자 이상 사용
+		잘못된 암호: 너무 간단함		// 연속된 숫자
+		새  암호 재입력:
+		passwd: 모든 인증 토큰이 성공적으로 업데이트 되었습니다.
+		// root 계정은 패스워드 정책을 무시하고 패스워드 설정이 가능
+		
+		#useradd JENNY
+		#cat /etc/shadow | tail -2
+		
+		#su - JENNY
+		// root 계정 -> 일반 사용자 계정으로 전환
+		   해당 계정의 패스워드가 필요없음
+		// 일반 사용자 계정 -> 일반 사용자 계정
+		   해당 계정의 패스워드가 필요함
+		   
+		JENNY$ su - JISOO
+		암호 : 123
+		JISOO$ passwd
+		자신의 패스워드를 변경할때는 먼저 현재 암호를 입력한 후에
+		변경이 가능하다.
+		$exit 		// 로그 아웃
+		$exit		// 로그 아웃
+		
+		JISOO 계정의 패스워드 잠금(Lock) 
+		#passwd -l JISOO
+		#su - JENNY
+		$su - JISOO 		<- 패스워드 입력 후 전환 가능
+		// 정확한 패스워드를 입력하여도 로그인을 할 수 없음.
+		$exit
+		$exit
+		#cat /etc/shadow | grep "JISOO"
+		// 패스워드 필드에 !! 가 추가되어 잠금(오타 처리)이되어
+		   로그인 할 수 없다.
+		   
+		#passwd -u JISOO
+		#cat /etc/shadow | grep "JISOO"
+		//  패스워드 필드에 !! 제거 확인
+		
+		#passwd -d JISOO
+		// JISOO 계정의 패스워드를 제거
+		
+		#cat /etc/shadow | grep "JISOO"
+		// 패스워드 필드에 패스워드 제거 확인
+		#su - JENNY			
+		$su - JISOO			// 패스워드가 제거되어 입력없이 전환 가능
+		                      
+		그룹 관련 명령어
+			groupadd - 그룹 추가 
+				-g GID 
+				
+				#groupadd BTS
+				#groupadd -g 1000 BLACKPINK
+				#groupadd -g 2000 J-MEMBER
+				#groupadd -g 3000 R-MEMBER
+				
+				#cat /etc/group 
+				
+				필요한 계정		주 그룹 		보조 그룹
+				JISOO			BLACKPINK		J-MEMBER
+				JENNY			BLACKPINK		J-MEMBER
+				RISA			BLACKPINK		R-MEMBER
+				ROSE 			BLACKPINK		R-MEMBER
+				
+				#usermod -g BLACKPINK -G J-MEMBER JISOO
+				#usermod -g BLACKPINK -G J-MEMBER JENNY
+				#usermod -g BLACKPINK -G R-MEMBER RISA
+				#usermod -g BLACKPINK -G R-MEMBER ROSE
+				
+				- 사용자 계정은 여러 그룹에 포함될 수 있다.
+				- 자신을 대표하는 그룹이 있으며, 해당 그룹은
+				  GID를 통해 확인 할 수 있다.
+				
+				1. 특정계정의 주 그룹을 확인하는 방법
+				EX) JISOO 계정의 주그룹 확인
+				#cat /etc/passwd | grep "JISOO"
+				JISOO:x:500:1000::/home/JISOO:/bin/bash
+				출력의 결과 중 GID 필드를 확인한다. (1000)
+				#cat /etc/group | grep "1000"
+				BLACKPINK:x:1000:
+				
+				-> JISOO 계정의  GID는 1000이다.
+				-> GID 1000 해당하는 그룹의 정보는 /etc/group 
+				   파일에서 확인
+				-> BLACKPINK == GID 1000 
+				-> JISOO 계정의 주 그룹은 BLACKPINK(1000)이다. 
+				   
+				2. 특정 계정이 속한 보조그룹 확인 방법
+				   EX) JISOO계정이 속한 보조그룹 확인
+				   #cat /etc/group | grep "JISOO"
+			       JISOO:x:500:						// JISOO 그룹 
+				   J-MEMBER:x:2000:JISOO,JENNY		
+				
+				   4번째 필드(그룹멤버필드)에 JISOO 계정이 있는
+				   그룹은 해당 계정의 보조 그룹이다.
+				   
+				3. #groups [계정명]
+					- 해당 계정의 그룹정보를 출력
+					ex) #groups JISOO
+					
+						[계정명] : [주그룹] [보조그룹1] ... [보조그룹2]
+						JISOO : BLACKPINK J-MEMBER
+			groupmod
+				그룹의 정보를 수정
+				-g GID
+				
+				#groupmod -g 6000 BTS 
+				#cat /etc/groups | grep "BTS"
+				
+			groupdel
+				그룹 삭제
+				
+				#groupdel BTS
+				#cat /etc/groups | grep "BTS"	
+				출력결과가 없으면 삭제 완료
+				
+			su (Substitute User) - 다른 사용자계정으로 전환
+			#su [계정명]		- 해당 계정으로 전환하나 환경변수는 바꾸지 않음
+			#su - [계정명] 		- 해당 계정으로 전환하며 환경변수도 함께 변경
+			
+			#cd /home
+			#echo $PWD				// 현재 경로 정보를 저장하고있는 환경변수
+			/home
+			#su JISOO				// 사용자 전환
+			$echo $PWD
+			/home 					// 기존과 동일한 경로
+			$logout 
+			
+			#su - JISOO				
+			$echo $PWD				// 현재 경로 확인
+			/home/JISOO
+			
+			모든 계정은 로그인 할때 가장 처음 위치하는 디렉토리는
+			해당 계정의 홈(~) 디렉토리이다.
+			  
+									사용자 계정 생성 과정
+실습 					- (1) useradd 명령어를 실행
+						- (2) /etc/default/useradd 와 /etc/login.defs 파일의 내용 확인
+						- (3) /etc/passwd 파일과 /etc/group 파일에 계정 정보 추가
+						- (4) /etc/shadow 파일과 /etc/gshadow 파일에 계정 정보 추가
+						- (5) /home 디렉토리에 사용자 계정 명과 동일한 디렉토리 생성 
+						- (6) /etc/skel/ 디렉토리에 있는 파일 모두 홈 디렉토리에 복사
+						- (7) /var/spool/mail 디렉토리에 메일박스 파일을 생성
+조건 
+	1. 해당 명령어를 사용하지 않고 아래 조건이 충족하도록 설정
+		- 명령어를 사용하지 않고 사용자 계정 추가하기
+		- useradd, usermod, userdel, passwd, groupadd, groupmod, groupdel 금지
+	2. 계정명   : TEST-USER10
+	3. UID      : 8080
+	4. 비밀번호 : 자유
+	5. 그 외 설정은 모두 기본값 (기존에 있는 설정 복사해서 사용)
+	6. su 명령어를 이용하여 해당 계정으로 로그인 시 프롬프트가 아래와 같이 
+		- [TEST-USER10@Server-A ~ ]$	  
+			  
+	#vi /etc/passwd		TEST-USER10:x:8080:8080::/home/TEST-USER10:/bin/bash		  
+	#vi /etc/group					// TEST-USER10:x:8080:			   
+	#vi /etc/shadow					// TEST-USER10::17276:0:99999:7:::				
+	#vi /etc/gshadow				// TEST-USER10:!::								
+	#touch /var/spool/mail/TEST-USER10			// 메일박스 파일 생성 	   
+	#mkdir /home/TEST-USER10					// 홈디렉토리 생성	
+	#cp /etc/skel/.bash* /home/TEST-USER10		// 사용자 초기화 파일 복사	
+	#su - TEST-USER10	
+	[TEST-USER10@Server-A ~]$		
+	
+	bash-4.1$ 			// cp /etc/skel/.bash* /home/TEST-USER10/
+	(1) 프롬프트 구조는 /etc/bashrc 에서 만들어준다.
+		#cat /etc/bashrc | grep "PS1"
+		PS1="[\u@\h \w]\\$"
+	(2) /etc/bashrc가 실행이될려면 초기화 스크립트 동작 순서를 알아야한다.
+		/etc/profile -> ~/.bash_profile  -> ~/.bashrc -> /etc/bashrc
+	(3) 즉, /etc/skel 디렉토리에 위치한 파일 ( ~/.bash_profile, ~/.bashrc )이
+	    없다면 /etc/bashrc 가 실해이안된다.  -> PS1 변수에 아무값도 들어가지 않는다.
+		-> bash-4.1$
+	테스트
+	#vi /etc/passwd
+	JISOO:x:[UID]:[GID] ..... 
+	
+	UID -> 0 으로 변경 후 저장 -> #su - JISOO
+	// UID 0 -> root의 UID이다.
+	
+		[root@Server-A ~]# 
+		// 시스템은 해당 계정의 이름으로 해당 계정을 구분하는것이 아니라 UID를 기준으로 해당 계정을 판단한다. UID 0은 root 계정 전용으로 root 외 다른계정이
+		UID가 0을 가지고 있는 지 확인해야한다.
+		   
+	shadow 시스템
+		- /etc/passwd 파일은 일반 사용자 읽을 수 있는 파일이다.
+		  해당 파일에 암호를 저장하는것이 보안상 좋지 않아 /etc/shadow 파일에
+		  암호를 저장한다.
+		  
+		  shadow 기능 비활성화 #pwunconv  
+		  // shadow 기능 비활성화 되어있는 상태에서는 패스워드를 변경할 수 없다.
+		  shadow 기능   활성화 #pwconv 
+	
+	권한
+		디렉토리 및 파일의 허가권 & 소유권
+		- 시스템에 존재하는 모든 파일은 권한이 부여되어 있다.
+		
+		접근을 제한 할 수 있는 권한을 허가권(퍼미션/Permission)이라 한다.
+		파일을 소유한 권한을 소유권(Owership)이라 한다.
+		
+	소유권 
+		소유권 확인 명령어
+		#ls -l
+		
+		#ls -l /bin/ls
+		              [   소유권 필드     ]
+		-rwxr-xr-x. 1 [ root         root ] 109208 2017-03-23 03:52 /bin/ls
+					  [ 소유계정][소유그룹] 
+		
+		/bin/ls 파일을 소유한 계정은 root이고, 소유 그룹은 root 이다.
+		
+		소유권 변경 명령어
+		#chown
+			#chown [계정]:[그룹] [파일]
+			
+		#mkdir -p /practice/chown_test
+		#cd /practice/chown_test
+		#touch file1
+		#ls -l
+		-rw-r--r--. 1 root root 0 2017-12-10 02:06 file1
+		
+		// 기본적으로 파일의 소유권은 해당 파일을 생성한 계정의 UID와 GID가
+		   각 소유권에 필드에 지정된다.
+		   
+		#su - JISOO
+		$touch file1
+		$ls -l
+		-rw-r--r--. 1 JISOO BLACKPINK 0 2017-12-10 02:06 file1
+		file1을 소유한 계정은 JISOO 이며, BLACKPINK 그룹이 해당 파일을 소유한 그룹이다. 
+		
+		$exit
+		
+		소유권				파일명
+		root root 			file1
+		
+		#chown JISOO file1		// 소유권 변경
+		#ls -l
+		소유권	-> JISOO root 	// 소유 계정만 변경하는 방법
+		
+		#chown RISA:BLACKPINK file1
+		#ls -l
+		소유권 -> RISA BLACKPINK	// 소유 계정과 그룹을 동시에 변경하는 방법
+		
+		#chown :R-MEMBER file1
+		#ls -l 
+		소유권 -> RISA R-MEMBER		// 소유 그룹필드만 변경하는 방법
+									// #chgrp 그룹명 [파일]
+								
+		#chown root.root file1		// " : " 대신 " . " 사용 가능
+		#ls -l
+		소유권 -> root root
+		
+		허가권
+			허가권 필드를 확인 명령어
+			#ls -l
+			ex) #ls -l /bin/ls
+			
+		    [ 허가권 ]	
+		   -rwxr-xr-x. 1 root root 109208 2017-03-23 03:52 /bin/ls
+			
+			- 허가권 필드는 3개의 필드(3bit씩 구분)로 구성되어있다.
+			
+			rwx				r-x				r-x 	
+			사용자(User)	그룹(Group)		기타 사용자(Other)
+			- 각 필드마다 사용자, 그룹, 기타 사용자가 파일을 읽고, 쓰고, 실행
+			  할 수 있는 지를 문자로 표현한 것.
+			  
+			  
+			rwx 의미 	r (read)   읽기
+						w (write)  쓰기
+						x (eXcute) 실행
+						- (bar)    해당 권한 없음
+		
+		   rwx - 해당 파일을 소유한 사용자(User)는 해당 파일을 읽고 쓰고 실행할 수 있는 권한이 있다.
+		   
+		   r-x - 해당 파일을 소유한 그룹(Group)에 속한 계정은 해당 파일을 읽고,
+		         실행할 수 있는 권한이 있다.
+				 
+		   r-x - 해당 파일을 소유한 소유 계정, 소유한 그룹도 아닌 그외(Other)에 
+		         사용자는 읽기, 실행 권한이 있다.
+	허가권 변경
+	#chmod 	(Change Mode)
+		해당 명령어에는 2가지 모드 존재한다.
+		1. 기호 모드 (상대값/Symbolic Mode/사람이 사용하기 편한 형태)
+		2. 숫자 모드 (절대값/Absolute Mode/컴퓨터 사용하기 편한 형태)
+				 
+		기호 모드		 
+			+ 권한 부여		s SetUID, SetGID	u User
+			- 권한 제거		t Sticky   			g Group
+			= 권한 유지 						o Ohter 
+												a All
+												
+		대상 (u, g, o, a)에 대해서 r, w, x 권한을 부여하는 명령어   
+		
+		#cd /practice/chown_test
+		#ls -l
+		rw- r-- r--	root root file1
+		
+		기존 허가권					변경 후 허가권
+		rw- r-- r--					rw- r-x r--
+		
+		#chmod [허가권] [파일명]
+		#chmod g+x file1
+		
+		rw- r-x r--					rw- rwx rw-
+		
+		#chmod g+w,o+w file1
+		// #chmod go+w file1
+		
+		rw- rwx rw-					rw- rw- rw-
+		
+		#chmod g-x file1
+		
+		rw- rw- rw-					rwx r-x r--
+		
+		#chmod u+x,g-w,g+x,o-w file1
+		
+		
+		#ls -l /etc/shadows 
+		r-- --- --- root root /etc/shadow
+		
+		해당 파일을 JISOO 계정이 읽을 수 있도록 허가권이나
+		소유권 변경하여 아래 명령어가 실행이되도록 설정
+		
+		JISOO$ cat /etc/shadow
+		
+		1. #chown JISOO:root /etc/shadow
+		   r-- --- --- JISOO root /etc/shadow	 
+		
+		2. #chmod o+r /etc/shadow
+		   r-- --- r-- root root /etc/shadow
+		
+		3. #usermod -G root JISOO
+		   #chmod g+r /etc/shadow
+		   r-- r-- --- root root /etc/shadow
+		
+		root 계정은 소유권과 허가권을 무시함.
+	
+		숫자 모드
+		허가권 실습
+		패스워드 정책
+		sudo
+		속성
+		특수권한
+		ACL
+		
+	
+		
+						

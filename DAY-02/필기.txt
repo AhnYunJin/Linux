@@ -1,0 +1,316 @@
+
+	
+	하드 디스크 - 서점
+	파일 시스템 - 도서 검색대
+	디렉토리 파일 - 책장
+    일반 파일 - 책
+	
+	리눅스 파일 시스템 구조
+		- 디렉토리로 구성된 계층적구조 
+		
+	명령어의 도움말
+		#man - 명령어 메뉴얼 확인
+			#man [command]
+			// 운영체제 최소(Minimal)설치 시 설치가 되어있지 않아
+			   설치가 필요하다.
+			
+			#yum -y install man
+			// man 패키지 설치
+			
+			#man fdisk
+			// fdisk 명령어의 메뉴얼을 확인
+			// space bar - 화면 단위로 페이지 이동
+			// enter 	 - 한줄 씩 이동
+			// q         - 종료
+			
+			#yum -y install man-pages-ko.noarch
+			// man 한글화 패키지 설치
+			
+			#man fdisk
+			// 한글로 출력되는지 확인
+			
+		
+		
+		#mkdir (MaKe DIRectory)
+		- 디렉토리 생성
+			#mkdir [dir_name]
+				-p 디렉토리 생성 시 하위디렉토리를 포함하여 생성
+				   (계층 구조 생성)
+			
+		#mkdir /practice		// 디렉토리 생성
+		#cd /practice			
+		#pwd		
+		/practice
+		
+		#mkdir ./DIR-1			// 상대 경로 방법
+		#cd ./DIR-1				
+		#pwd
+		/practice/DIR-1
+		
+		#cd /practice/DIR-1		// 절대 경로 방법
+		
+		#mkdir /practice/DIR-1/korea/seoul/dobong-gu
+		// 디렉토리 구조 생성
+		
+		ex) 절대 경로 이용
+		// #mkdir /practice/DIR-1/korea
+		// #mkdir /practice/DIR-1/korea/seoul
+		// #mkdir /practice/DIR-1/korea/seoul/dobong-gu  
+		// 계층 구조를 만들기 위해 상위 디렉토리를 먼저 생성해야한다.
+		
+		#mkdir -p /practice/DIR-1/korea/seoul/dobong-gu
+		// 하위 디렉토리를 생성하기 위한 상위 디렉토리가 없을 경우
+		   생성 한다. ( 입력한 경로가 모두 생성된다. )
+		   
+		#cd /practice/DIR-1/korea/seoul/dobong-gu
+		#pwd
+		/practice/DIR-1/korea/seoul/dobong-gu
+		
+		- 절대경로와 상대경로를 사용해서 디렉토리를 변경
+					   /
+					   |				상대 경로
+					  DIR				.  현재 디렉토리 
+					   |				.. 상위 디렉토리 
+					 korea
+					   |
+					 seoul
+					   |
+					dobong-gu
+		
+		#mkdir [dir_name1] [dir_name2] [dir_name3] ... [dir_nameN]
+		// 여러 디렉토리를 동시에 생성
+		// 공백을 기준으로 인자를 구별
+		
+		#rmdir 
+			- 비어있는 디렉토리 삭제
+			- 사용빈도는 매우 낮음
+			
+		#rmdir [dir_name]
+		
+	실습	
+	1. 최상위 디렉토리 아래 practice 디렉토리 생성.
+		절대경로 방법 #mkdir /practice
+		
+		상대경로 방법 #cd /
+					  (1) #mkdir ./practice
+		              (2) #mkdir practice
+					  
+	2. 생성한 practice 디렉토리 아래 day1 ~ day7 까지 디렉토리 생성.
+	   (단, 명령어 한번으로 생성)
+		
+		#cd /practice
+		(1) #mkdir day1 day2 day3 day4 day5 day6 day7
+	    (2) #mkdir day{1,2,3,4,5,6,7}
+		(3) #mkdir day{1..7}
+
+	3. 생성한 day1 디렉토리 아래 그림과 같이 디렉토리 생성.
+	   (단, 명령어 한번으로 생성)
+	   
+	   절대 경로 : #mkdir -p /practice/day1/Linux/CentOS/6.9/2.6.32
+	   상대 경로 : #cd /practice/day1
+				   #mkdir -p ./Linux/CentOS/6.9/2.6.32
+	   
+	6. 생성한 practice 디렉토리 아래 생성한 day2 ~ day7 디렉토리 삭제.
+
+		#rmdir day2 
+		#rmdir day3
+		   ...
+		#rmdir day7
+		
+		#rmdir day2 day3 day4 day5 day6 day7
+		#rmdir day{2,3,4,5,6,7}
+		#rmdir day{2..7}
+		
+		
+		
+	#cp (CoPy) - 파일 복사	
+		#cp [option] [source_file] [target_file]
+		
+		#mkdir /practice/cp_test
+		#cd /practice/cp_test
+		#pwd
+		/practice/cp_test
+		
+		(1) 복사 시 마지막 인자가 디렉토리인 경우
+		    #cp /bin/ls /practice/cp_test				// 절대 경로
+			#ls
+			ls 		// 복사가된 파일을 확인
+			
+			#cp /root/anaconda-ks.cfg ./				// 상대 경로 
+			#ls
+			ls anaconda-ks.cfg
+			
+		(2) 복사 시 마지막 인자가 파일인 경우
+			#cp /bin/ls /practice/cp_test/abc
+			#ls
+			ls anaconda-ks.cfg abc
+			
+			// /bin 디렉토리에 위치한 ls 파일을
+			   /practice/cp_test 디렉토리에 복사
+			// 이름을 지정(변경)하여 복사
+		
+		(3) 복사 시 인자를 여러개 지정할 경우
+		    #cp /bin/cut /bin/cat /bin/chmod /practice/cp_test
+			
+			// 동시에 파일을 여러개 복사
+			// 단, 마지막 인자는 디렉토리이어야 한다.
+	
+		(4) 디렉토리 복사
+			#cp -r /bin ./		
+			// /bin 디렉토리를 현재 경로에 복사
+			
+		mv (MoVe) - 파일 이동
+			#mv [option] [source_file] [target_file]
+			
+		(1) 이동 시 마지막 인자가 디렉토리인 경우
+			#mkdir ./mv_test
+	
+			#mv ./ls ./mv_test/
+			현재 경로에 위치한 ls 파일을 mv_test 디렉토리로 이동
+		
+		(2) 이동 시 마지막 인자가 파일인 경우
+			#mv /practice/cp_test/chmod /mv_test/123
+			
+			// 마지막인자가 파일인 경우 이름을 지정(변경)하며
+			   이동시킬 수 있다.
+			
+			#mv ./cat ./abc
+			// cat 파일을 abc로 이름 변경
+		
+		(3) 복사 시 인자가 여러개 인 경우
+			#mv [file1] [file2] ... [fileN] [directory]
+			// 마지막 인자는 디렉토리어야 하며, 나열한 인자(파일)가
+			   해당 디렉토리로 이동된다.
+		
+		(4) 디렉토리 이동
+			#mv [directory] [directory]
+			
+			#mkdir TEST-DIR1 
+			#mv ./TEST-DIR1 ./mv_test
+	
+		rm
+			#rm [file/directory] 
+		
+		#rm [file1]
+		
+		-r 디렉토리 삭제 시, 하위 파일을 포함하여 삭제
+		-f 삭제 여부를 확인하지 않고 모두 삭제
+		
+		#rm -rf [directory]
+		// 파일이 많을 경우 삭제 과정에 출력되는 메세지를 모두
+		   무시하고 삭제가 가능하다.
+	
+실습	
+1. /practice/day3/file_test/ 디렉토리 생성
+	
+	#mkdir -p /practice/day3/file_test
+
+2. /practice/day3 디렉토리 아래 하위 디렉토리 생성
+	
+	/practice/day3/file_test/bin_a
+	/practice/day3/file_test/bin_b
+	
+	단, 명령어 한줄을 이용.
+	
+	(1) #mkdir /practice/day3/file_test/bin_{a,b}
+	
+	#cd /practice/day3/file_test
+	(2) #mkdir ./bin_a ./bin_B
+	
+3. /bin 경로에 있는 a로 시작하는 모든 파일을 /practice/day3/file_test/bin_a 경로에 복사.
+   /bin 경로에 있는 b로 시작하는 모든 파일을 /practice/day3/file_test/bin_b 경로에 복사.
+   
+   (3) #cp /bin/a* ./bin_a/
+   
+4. /practice/day3/file_test/bin_ab 디렉토리를 생성하고, bin_a, bin_b 디렉토리에 있는 
+   파일을 모두 bin_ab 디렉토리로 이동시킨다.
+   
+	#mkdir ./bin_ab
+	#mv bin_a bin_b bin_ab
+	
+			
+			
+		Xshell 설정
+		(1) 로그인 스크립트
+				- ex) alias 설정은 재접속 시 해제가 되기때문에,
+				      해당 기능을 통해 접속 할때마다 alias를 자동으로
+					  설정 할 수 있다.
+					  자주 사용하는 설정을 반복적으로 입력  
+		(2) 폰트 변경
+				- 가독성이 폰트를 사용하여 오타나 실수를 방지 할 수 있다.
+		(3) 파일 전송
+				- #yum -y install lrzsz		// 파일 전송 패키지 설치
+				
+				호스트 운영체제 -> 게스트 운영체제(VM)
+				(1) Drag & Drop
+				(2) #rz
+				
+				호스트 운영체제 <- 게스트 운영체제(VM)
+				(1) #sz [file]
+					ex) #sz /etc/passwd 
+						탐색기를 이용하여 저장 할 경로를 지정
+				
+		(4) 빠른 명령 & 작성 창
+			- 자주 사용하는 명령어를 단축키를 이용하여 사용 할 수 있다.
+			- 동일한 명령어를 여러 서버에 전송할때 유용하다.
+		
+		(5) 로그 생성
+			- 평소에 작업하던 기록을 남겨 유사한 작업이 있을때 참고 할 수 있다.
+			
+			- 문제 발생 시 문제 발생 포인트를 빠르게 찾을 수 있어 문제 해결에
+			  많은 도움이 된다.
+			
+			- 실무 환경에서는 잘못을 서로 회피하면서 일을 하기때문에,
+			  실수가아니다라는 것을 증명할 수 있는 자료(로그,근무일지,메일,문자 등등)
+			  등을 항상 백업해야한다.
+			
+		(6) 클립보드 사용
+			
+			클립보드 복사		붙여넣기
+			Ctrl + c      		Ctrl + v
+			
+			Xshelll 복사		붙여넣기
+			블록 처리(드래그) 	(1) 마우스 우클릭
+								(2) Shift + Insert
+		
+		[root@Server-A ~]# ls
+		anaconda-ks.cfg  install.log  install.log.syslog
+		[root@Server-A ~]# 
+		echo "LINUX"
+
+		
+		
+		시스템 종료 & 재시작
+		
+		#shutdown [option] [time]
+			-r  reboot		// 재부팅
+			-h  halt		// 종료
+			-c  cancel		// 예약 취소
+			
+			time 
+				now			// 즉시 실행
+				+[N] 		// N분 단위
+		EX) 
+			#shutdown -h now // 시스템 즉시 종료
+			#shutdown -h +5  // 5분뒤에 시스템 종료
+				
+		시스템 종료 			재부팅
+		#shutdown -h now		#shutdown -r now
+		#halt					#reboot
+		#poweroff				#init 6 
+		#init 0
+				
+					
+							
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
