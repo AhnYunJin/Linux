@@ -1,0 +1,57 @@
+Order 지시어
+
+설명:	기본적으로 접근을 허용할지 거부할지 여부와 Allow와 Deny 처리순서를 정한다.
+문법:	Order ordering
+기본값:	Order Deny,Allow
+사용장소:	directory, .htaccess
+Override 옵션:	Limit
+상태:	Base
+모듈:	mod_authz_host
+Order 지시어는 기본적으로 접근을 허용할지 거부할지 여부와 Allow와 Deny 지시어 처리순서를 정한다. 
+ordering은 다음 중 하나이다
+
+Deny,Allow
+Deny 지시어를 Allow 지시어 보다 먼저 살펴본다. 그리고 기본적으로 접근을 허용한다. 
+Deny나 Allow 지시어에 해당되지 않는 클라이언트의 접근을 허용한다.
+
+Allow,Deny
+Allow 지시어를 Deny 지시어 보다 먼저 살펴본다. 그리고 기본적으로 접근을 허용하지 않는다. 
+Deny나 Allow 지시어에 해당되지 않는 클라이언트의 접근을 거부한다.
+
+Mutual-failure
+Deny 목록에는 안나오고 Allow 목록에만 나오는 호스트만 접근을 허용한다.
+Order Allow,Deny와 같은 일을 하기때문에 사용하지 않는다.
+키워드는 쉼표로만 구분한다; 사이에 공백이 있으면 안된다.
+모든 경우 Allow와 Deny 모두 살펴봄을 명심하라.
+
+아래 예에서 apache.org 도메인의 모든 호스트의 접근은 허용하지만, 다른 호스트는 모두 거부한다.
+
+Order Deny,Allow
+Deny from all
+Allow from apache.org
+
+아래 예에서 foo.apache.org 하위도메인에 있는 호스트만 거부하고,
+apache.org 도메인에 있는 호스트는 모두 접근을 허용한다.
+기본적으로 접근을 거부하기때문에 apache.org 도메인에 속하지 않는 호스트는 접근을 거부한다.
+
+Order Allow,Deny
+Allow from apache.org
+Deny from foo.apache.org
+
+반대로 위의 Order를 Deny,Allow로 변경하면, 모든 호스트의 접근을 허용한다.
+설정파일에서 지시어가 나오는 순서와 관계없이 Allow from apache.org를 제일
+마지막에 처리하여 Deny from foo.apache.org의 효과를 무시하기 때문이다.
+또, 기본적으로 접근을 허가하므로 apache.org 도메인에 속하지 않는 호스트도 모두 접근을 허가한다.
+
+Order 지시어는 기본적으로 접근을 허용할지 거부할지를 정하기때문에
+Allow나 Deny 지시어를 사용하지 않아도 접근가능 여부에 영향을 준다. 예를 들어,
+
+<Directory /www>
+Order Allow,Deny
+</Directory>
+
+는 기본적으로 접근을 거부하기때문에 /www 디렉토리에 대한 모든 접근을 거부한다.
+Order 지시어가 정하는 접근 지시어 처리순서는 해당 서버설정 처리단계에만 영향을 준다.
+즉, Order 지시어 설정과 관계없이 <Location> 섹션 안에 있는 Allow나 Deny 지시어는 <Directory>
+섹션이나 .htaccess 파일에 있는 Allow와 Deny 지시어를 모두 처리한 후에 처리한다.
+설정 섹션들이 결합하는 방법에 대해서는 어떻게 Directory, Location, Files 섹션이 동작하나 문서를 참고하라.

@@ -1,0 +1,13 @@
+default menu.c32
+prompt 0
+timeout 300
+ontimeout local
+
+LABEL local
+        MENU LABEL ^0) Boot Local Hard Disk
+        localboot 0
+
+LABEL CentOS6.9
+        MENU LABEL ^1) CentOS 6.9 64bit Kickstart (NFS)
+        KERNEL /centos6.9/vmlinuz
+        APPEND initrd=/centos6.9/initrd.img load_ramdisk=1 network ksdevice=link ks=nfs:100.100.100.120:/ks/tftpboot/kickstart/ks.cfg

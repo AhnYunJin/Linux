@@ -1,0 +1,158 @@
+
+
+	DHCP (Dynamic Host Configuration Protocol)
+	- 사용자가 인터넷을 하기위한 모든 정보를 설정해주는 기능
+	- IP충둘 방지, IP주소 할당, 서브넷 마스크, 게이트 웨이,
+	  브로드 캐스트 주소, DNS주소 등
+	  
+	DHCP서버       Server-A
+	DHCP클라이언트 Server-B, Client-Linux, Client-Win
+	
+	Server-A
+	#yum -y install dhcp*		// dhcp 관련 패키지 설치
+	#vim /etc/dhcp/dhcpd.conf	// 주 설정 파일
+	
+	subnet 100.100.100.0 netmask 255.255.255.0 {
+	// dhcp가 동작할 네트워크 정보
+	
+		range 100.100.100.200 100.100.100.210;
+		//IP주소 범위(풀) 100.100.100.200 ~ 210 
+	
+		option routers 100.100.100.2;
+		// 클라이언트에게 할당할 게이트웨이 주소
+		
+		option broadcast-address 100.100.100.255;
+		// 브로드 캐스트 주소
+		
+		option domain-name-servers 100.100.100.110, 100.100.100.120;
+		// DNS서버 1,2차 주소
+		
+		default-lease-time 10000;
+		// 기본 임대 시간 (초)
+		
+		max-lease-time 20000;
+		// 최대 임대 시간 (초)
+		
+	}
+	
+	#service dhcpd restart
+	
+	// 오타가 있으면 프로그램이 동작하지 않는다.
+	// 오타 위치를 알려주지 않아, 오타 찾기가 매우 힘들다.
+	
+	IP 임대 기록이 저장되는 파일
+	/var/lib/dhcpd/dhcpd.leases
+	
+	클라이언트 설정
+	Server-B, Client-Linux, Client-Win
+	- VMware Workstation 에서 지원하는 DHCP기능을 잠시 비활성화
+	// 클라이언트가 DHCP서버를 찾는 과정에서 혼선이 있을 수 있으므로
+	// Server-A로부터 IP정보를 임대 받기위해 DHCP 기능을 비활성화 한다.
+	
+	Server-B & Client-Linux
+	- 각 서버의 네트워크 설정 파일의 정보를 수정한다.
+	  #vi /etc/sysconfig/network-scripts/ifcfg-eth0 	// ifcfg-bond0
+	  ~~~~~~~~~~~~ 생략 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	  BOOTPROTO=static 	---->	dhcp
+	  #IPADDR			// static 설정 모두 주석 처리
+	  #NETMASK          // static 설정 모두 주석 처리
+	  #GATEWAY          // static 설정 모두 주석 처리
+	  #DNS1             // static 설정 모두 주석 처리
+	  #DNS2             // static 설정 모두 주석 처리
+	  
+	  해당 정보가 있더라도 dhcp 설정이 우선 순위가 높아 고정(static)아이피가
+	  아닌 dhcp서버로 부터 ip임대 요청을한다.
+	  
+	Client-Win
+		- 자동으로 할당받기 옵션을 사용하여 DHCP서버로 부터 IP를
+		  임대받도록한다.
+		  
+	IP임대 요청
+	Linux
+		#service network restart
+		// 네트워크 데몬이 재시작되면서 설정파일의 내용(BOOTPROTO)을 
+		   확인하여 자신이 속한 네트워크에서 DHCP서버를 찾는 과정이 진행된다.
+		   
+	Windows
+		Win + r 	->	실행	-> cmd
+		cmd> ipconfig /renew 			// IP주소 재할당
+	
+	확인 방법		( 100.100.100.200 ~ 210 )
+		Linux
+		#ifconfig		// IP주소 확인
+		Windows
+		>ipconfig /all 	// IP주소와 DHCP서버 주소 확인
+		
+	
+	DHCP를 이용하여 특정 호스트에게 고정 IP설정 하기
+					MAC
+	EX)				xx:xx:xx:xx:xx:xx
+	Server-B		00:0c:29:d5:37:ec
+	Client-Linux	00:0c:29:21:4a:78
+	Client-Win		00:0c:29:56:16:24
+	
+	확인 방법
+	#cat /var/lib/dhcpd/dhcpd.leases
+	//  hardware ethernet	xx:xx:xx:xx:xx:xx
+	    각 클라이언트의 MAC주소 확인
+		
+	#vi /etc/dhcp/dhcpd.conf
+	~~~~~~~~~~~~~~~~생략~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	default-lease-time 10000;
+	max-lease-time 20000;
+	} 
+	
+	// 형식
+	// host [hostname] {
+		hardware ethernet [mac주소];
+		fixed-address [고정할 IP주소];
+	}
+	
+	host Server-B {
+		hardware ethernet 00:0c:29:d5:37:ec;
+		fixed-address 100.100.100.120;
+	}
+	
+	host Client-Linux {
+		hardware ethernet 00:0c:29:21:4a:78;
+		fixed-address 100.100.100.130;	
+	}
+	
+	host Client-Win {
+		hardware ethernet 00:0c:29:56:16:24;
+	    fixed-address 100.100.100.140;	
+	}
+		// 해당 맥주소를 가진 클라이언트에게는 고정 IP주소를 할당한다.
+	
+	
+	#service dhcpd restart
+	
+	확인사항
+	- 클라이언트
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		
+		
+		   
+	
+		  
+		  
+	  
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	

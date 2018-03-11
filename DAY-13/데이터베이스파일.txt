@@ -1,0 +1,15 @@
+$TTL 1D
+@       IN SOA  ns.dongsam.com. admin.dongsam.com. (
+                                        20180121; serial
+                                        1D      ; refresh
+                                        1H      ; retry
+                                        1W      ; expire
+                                        3H )    ; minimum
+        NS      ns.dongsam.com.
+        IN      A       100.100.100.110
+ns      IN      A       100.100.100.110
+www     IN      A       100.100.100.110
+ftp     IN      A       100.100.100.110
+ntp     IN      A       100.100.100.110
+samba   IN      A       100.100.100.110
+web     IN      CNAME   www

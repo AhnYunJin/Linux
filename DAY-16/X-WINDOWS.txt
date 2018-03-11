@@ -1,0 +1,14 @@
+	X Windows 및 관련 패키지 그룹 설치
+	#yum groupinstall -y "X Window System" "Desktop" "Fonts" "Korean Support"
+	
+	X Windows 실행
+	#init 5
+	
+	부팅 시 런레벨을 5로 변경 (영구설정)
+	#vi /etc/inittab
+	id:3:initdefault 			-->			id:5:initdefault 				
+	저장, 재부팅 후에도 X-Windows 환경으로 부팅되는 지 확인
+	
+	디스크 추가한것들 전부 제거, 필요없는 계정들 삭제
+	/etc/fstab 실습때 추가한 내용들도 함께 삭제
+	스냅샷 이름 : X-Windows 설치 완료

@@ -1,0 +1,74 @@
+		
+		
+		
+	yum - 패키지 관리도구
+		- rpm 기반의 패키지를 관리하는 프로그램이며, 의존성 문제를
+		  자동으로 해결해준다.
+		  
+		- 설치할 패키지 분석을 통하여 시스템에 설치가되어있는 패키지의
+		  버전과 저장소에 위치한 패키지의 버전을 비교하여 자동으로
+		  업데이트도 진행한다. 
+		  
+		- 저장소(Repository) -> repo / 레포
+		
+		#yum [옵션] [명령어] [패키지명]
+			-y 설치과정에 출력되는 질문에 모두다 yes로 응답
+			
+		install 		패키지 설치
+		update			패키지 업데이트
+		check-update	패키지 업데이트 가능 여부 확인
+		remove 			패키지 제거	(rpm -e)
+		list			패키지 목록 확인
+		
+			list all	    설치가 되어있거나, 가능한 전체 패키지 목록 확인 
+			list available	설치 가능한 패키지 목록
+			list update		업데이트 가능 패키지 목록
+			list installed 	이미 설치가 되어있는 패키지 목록 ( rpm -qa )
+		info 			패키지 정보 확인 ( rpm -qi )
+		
+		#yum localinstall [패키지명].rpm
+		// #rpm -ivh [패키지명].rpm
+		
+		#yum search [패키지명/정보와 관련된 단어]
+		// [단어]의 내용이 들어간 패키지 이름과 정보를 출력
+		
+		#yum clean all
+			- 패키지 목록 파일을 삭제하여 다음번 yum 명령어 실행 시
+			  다시 패키지 목록을 다운받도록 하는 명령어
+			  
+		
+		#yum clean all
+		#yum install httpd
+		// http 패키지를 설치한다.
+		
+		#cd /etc/yum.repos.d
+		#ls
+		CentOS-Base.repo       CentOS-Media.repo  CentOS-fasttrack.repo
+		CentOS-Debuginfo.repo  CentOS-Vault.repo
+		
+		CentOS-Base.repo 		// 기본적인 패키지들을 다운받을 수 있는
+		                           저장소의 주소 정보가 명시되어있는 repo파일
+			
+		http://mirror.centos.org/centos/$releasever/os/$basearch/
+		http://mirror.centos.org/centos/6.9/os/x86_64
+		
+		
+		네트워크 관련 키워드 검색 하기
+		 - IP주소
+		 - MAC주소
+		 - LAN
+		 - Router 장비의 용도
+		 - Switch 장비의 용도
+		 - DHCP, NAT
+		 
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		

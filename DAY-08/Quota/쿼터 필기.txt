@@ -1,0 +1,184 @@
+
+	
+	사용자별 공간 할당(Quota)
+	- 파일 시스템마다 사용자나 그룹이 생성할 수 있는 파일의 용량 및
+	  개수를 제한하는 것
+	
+	- 서버에 데이터를 저장할 수 있는 공간은 무한하지 않기때문에
+      사용자 임의로 서버의 자원을 모두 사용하는 것을 방지하여      
+	  용량이 부족하여 시스템 장애가 발생하는 일을 사전에 방지할 수 있다.
+     	  
+	 작업순서
+	 1. 쿼터를 지원하는지 확인 
+		#rpm -qa | grep quota
+		-> 검색 결과가 없다면, 쿼터를 설치해야함
+		#yum -y install quota 
+     2. 사용자에게 할당할 공간을 생성(디스크 추가)
+		파티션생성, 파일시스템 생성, 마운트 포인트 및 마운트
+		UUID 형태로 /etc/fstab 정보 추가
+		
+		/dev/sdb1 -> ext3 -> /Q-USER_DIR1 
+	    /dev/sdc1 -> ext4 -> /Q-USER_DIR2
+	    /dev/sdd1 -> ext3 -> /Q-GROUP_DIR1
+	
+		#umount /Q-USER_DIR1
+		#umount /Q-USER_DIR2
+		#umount /Q-GROUP_DIR1
+		#mkfs -t ext3 /dev/sdb1
+		#mkfs -t ext4 /dev/sdc1
+		#mkfs -t ext3 /dev/sdd1
+		#mount /dev/sdb1 /Q-USER_DIR1
+		#mount /dev/sdc1 /Q-USER_DIR2
+		#mount /dev/sdd1 /Q-GROUP_DIR1
+		#blkid
+		
+		/etc/fstab에 UUID 필드와 파일시스템 필드 변경
+		ex)
+		UUID=dc7ee3c0-ebae-4ec7-a06e-fb1bf3f0ebe5 /Q-USER_DIR1  ext3 defaults 0 0
+		UUID=b809e26a-e3ba-41e0-b5c8-74fd6693ea84 /Q-USER_DIR2  ext4 defaults 0 0
+		UUID=3d83e7fe-14e9-4d40-866d-f97926e9b340 /Q-GROUP_DIR1 ext3 defaults 0 0
+
+	 3. 쿼터를 사용하기 위해 /etc/fstab 옵션 추가
+		ext3 -> 사용자 쿼터 -> usrquota
+		        그룹   쿼터 -> grpquota
+		
+		ext4 -> 사용자 쿼터 -> usrjquota=aquota.user,jqfmt=vfsv0 
+		        그룹   쿼터 -> grpjquota=aquota.group,jqfmt=vfsv0
+		
+		재부팅 혹은 리마운트 통해 /etc/fstab의 옵션을 적용
+		#mount -o remount /Q-USER_DIR1
+		#mount -o remount /Q-USER_DIR2
+		#mount -o remount /Q-GROUP_DIR1
+		// 다시 마운트하며 /etc/fstab 옵션이 적용
+		
+		#mount
+		/dev/sdc1 on /Q-USER_DIR2 type ext4 (rw,usrjquota=aquota.user,jqfmt=vfsv0)
+		/dev/sdb1 on /Q-USER_DIR1 type ext3 (rw,usrquota)
+		/dev/sdd1 on /Q-GROUP_DIR1 type ext3 (rw,grpquota)
+	
+	4. 쿼터 테스트를 위한 계정과 그룹을 추가
+		사용자 계정 : Q-USER1, Q-USER2
+		       그룹 : Q-GROUP
+		
+		디렉토리명		소유 계정			소유 그룹
+		/Q-USER_DIR1	Q-USER1				root
+		/Q-USER_DIR2	Q-USER2				root
+		/Q-GROUP_DIR1	root				Q-GROUP
+		
+	5. 쿼터를 사용하기 위해 SELINUX 비활성
+		- 사용별로 사용할 수 있는 프로그램(프로세스)을 제한하는 리눅스 내장 보안 프로그램
+		  #setenforce 0 			// SELINUX 비활성 (일시적)
+		  #vi /etc/sysconfig/selinux
+		  SELINUX=disabled			// SELINUX 비활성 (영구적)
+	
+	6. 쿼터 시작
+	   - 쿼터 설정(DB) 파일 생성
+	   - 쿼터를 적용할 파일 시스템이 마운트되어 있는 최상위 디렉토리로 이동
+		 ex) /Q-USER_DIR1
+		 
+		 #cd /Q-USER_DIR1
+		 #quotaoff /dev/sdb1		// 해당 파티션에 적용되어있는 쿼터설정을 off
+		 // #quotacheck [옵션] [파일시스템]
+		    - 쿼터 설정을 파일을 확인하여 있으면 설정을 확인하고
+			  없으면 생성을 도와주는 명령어
+			  
+			  -u 사용자 쿼터 파일 검사/생성
+			  -g 그룹   쿼터 파일 검사/생성
+			  -a 모든   쿼터 파일 검사/생성 
+		 
+		 #quotacheck -u /dev/sdb1
+		 #ls
+		 aquota.user 		<- 데이터 베이스 파일(쿼터 설정이모두 저장되어있다.)
+		 
+		 #quotaon /dev/sdb1				// 쿼터 파일이 만들어 졌으므로 쿼터를
+                                           시작할 수 있다.		 
+			
+	7. 쿼터 제한 영역 설정
+		(1) edquota						// vi 편집기를 이용하여 설정
+		(2) setquota 					// 명령어를 이용하여 설정
+			-u [계정명]					// 해당 계정의 제한영역을 설정
+			-g [그룹명]
+			
+		#edquota -u Q-USER1
+		Disk quotas for user Q-USER1 (uid 500):
+		Filesystem                   blocks       soft       hard     inodes     soft     hard
+		/dev/sdb1                         0          0          0          0        0        0
+
+		
+		blocks (용량)	// 운영체제 자동으로 계산
+			soft		// 사용자가 편집
+			hard		// 사용자가 편집
+		inodes (파일)	// 운영체제 자동으로 계산
+			soft		// 사용자가 편집
+			hard		// 사용자가 편집
+		
+		hard limit
+			- 사용자나 그룹이 해당 파일 시스템에서 사용할 수 있는 최대 용량과 최대 파일 개수
+		
+		soft limit
+			- 사용자나 그룹이 해당 파일 시스템에서 자유롭게 사용할 수 있는 용량과, 파일 개수
+			  를 지정하는 부분이다.
+			  만약, soft limit를 초과하게되면 유예기간에 돌입 하게 된다.
+			 
+			 유예기간 (Grace Period)
+				soft limit를 초과하면 유예기간이 설정한 시간안에 용량이나 파일 개수를
+				줄이지 않으면 유예기간이 끝나는 시점에 즉시 hard limit로 바뀌게 되어
+				더이상 자원을 사용 할 수 없다.
+				
+	8. 쿼터 유예 기간 설정
+		(1) edquota -t
+		(2) setquota  -t
+		
+		-t (유예기간)
+		-u (사용자/기본값)
+		-g (그룹)
+		
+		#edquota -t 
+		
+		#chmod 770 /Q-*
+		#chown Q-USER1:root /Q-USER_DIR1
+		#chown Q-USER2:root /Q-USER_DIR2
+		#chown root:Q-GROUP /Q-GROUP_DIR1
+	
+	9. 설정 확인
+		#repquota /dev/sdb1
+		*** Report for user quotas on device /dev/sdb1
+		Block grace time: 00:02; Inode grace time: 00:02
+								Block limits                File limits
+		User            used    soft    hard  grace    used  soft  hard  grace
+		----------------------------------------------------------------------
+		root      --   17684       0       0              3     0     0       
+		Q-USER1   --       4   10240   20480              1    10    15   
+	
+	10. 테스트
+		$su - Q-USER1
+		$cp /boot/vm /Q-USER_DIR1/file1
+		
+		
+	실습
+		쿼터 그룹 테스트 ( /Q-GROUP_DIR1 )
+		- 그룹 쿼터는 설정한 그룹에 사용자들이 모두 공유한다.
+		- Q-GROUP은 Q-GROUP_DIR1 디렉토리에서 용량은 최대 20MB까지 사용할 수있으며
+		  10MB 이상 사용 시 경고를 하도록하며, 파일의 개수는 최대 10개까지
+		  사용하고 5개 이상 넘을 시 경고를 한다. 두 설정 모두 유예 기간은
+		  2분으로 설정한다.
+		  
+		(1) 쿼터 설정 파일 생성 (aquota.group)
+		(2) 쿼터 설정
+		(3) 유예기간 설정
+		
+		1. Q-USER1 사용자가 해당 디렉토리에서 20메가를 사용하도록 하여
+		   hard limit가 설정되도록 만들고 Q-USER2 가 파일을 생성(복사)하여
+		   용량을 사용하도록 테스트
+		2. 1번 테스트 완료 후 파일을 모두 삭제한 다음 Q-USER2가 파일을 10개
+		   (0바이트)만들고, Q-USER1 계정이 파일을 지속적으로 생성하여
+		   소프트/하드 제한 영역을 공유하는 것을 확인 하기위한 테스트 진행
+		   
+		   
+		
+		
+		
+	 
+	 
+		
+		

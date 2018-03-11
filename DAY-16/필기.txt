@@ -1,0 +1,98 @@
+	#yum -y install httpd
+	#vi /etc/httpd/conf/httpd.conf
+	(1) :set number
+	(2) 57 ServerRoot "/etc/httpd"
+	(3) 136 Listen 100.100.100.110:80
+	(4) 262 ServerAdmin admin@dongsam.com
+	(5) 276 ServerName www.dongsam.com:80
+    (6) 292 DocumentRoot "/var/www/html"
+    (7) 402 DirectoryIndex index.html index.php
+ 
+    #service httpd restart
+
+	WEB	
+		Apache WEB 서버 주 설정 파일
+		- /etc/httpd/conf/httpd.conf 
+		
+		Apache WEB 서버 보조 설정 파일 
+		- /etc/httpd/conf.d/*.conf
+		
+		Document Root Directory
+		- 웹페이지를 확인할 최상위 디렉토리
+		- /var/www/html/
+						
+		EX) www.dongsam.com/ 
+		      /var/www/html/
+			  
+			www.dongsam.com/test/
+			  /var/www/html/test/
+		
+		Index Page
+		- 클라이언트가 특정 디렉토리에 접근 했을때 가장 먼저
+	      출력되는 웹페이지
+		- index.html
+
+		WEB서버 버전 확인
+		#httpd -v
+		Server version: Apache/2.2.15 (Unix)		
+		apache web 서버의 설정은 버전마다 조금씩 차이가 있다.
+
+		아파치 공식 홈페이지에는 각 버전별로 사용할 수 있는
+		지시어나, 명령어들이 잘 정리가 되어있다.
+		- 웹 서버 공부 시 해당 사이트롤 통해 진행
+		
+		firefox 설치
+		#yum -y isntall firefox
+		주소창 www.dongsam.com
+		       100.100.100.110
+			   
+		CLI환경
+		#yum -y install elinks		// 텍스트 환경에서 사용하는
+		                               인터넷 브라우저
+		#elinks 100.100.100.110
+		// Server-A 접속
+		
+		처음 접속시 출려되는 페이지는 /var/www/html/ 디렉토리에
+		위치한 index.html 파일이다. 하지만 이러한 파일이없는데
+		화면 페이지가 출력되는 이유는 오류 메세지가 발생할 경우
+		/var/www/error/noindex.html 파일을 출력하라는 설정이
+		있기때문이다.
+		
+		이러한 설정은 /etc/httpd/conf.d/welcome.conf 파일에 
+		설정되어있다.
+		
+		정적페이지 
+		ex) www.dongsam.com/test.html
+		
+			날짜 2018년 02월 11일 
+		
+		#vim /var/www/html/test.html
+		<html>
+			<head>
+			<body>
+			<h1 날짜 2018년 02월 11일 /h1> 
+			</body>
+			</head> 
+		</htm>
+		
+		동적페이지 
+		- 기존에 html로 작성된 페이지에 프로그램을 삽입하여
+		  프로그램에 결과가 클라이언트에게 전달되는 형태
+		  
+		/var/www/html/test.html
+		<html>
+			<head>
+			<body>
+			<?php date() ?> 
+			</body>
+		    </head>
+		</htm>
+		
+		
+		
+		
+		
+		
+		
+		
+		

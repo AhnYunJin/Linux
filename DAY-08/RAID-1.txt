@@ -1,0 +1,20 @@
+﻿		RAID1 구성
+			#mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sdf1 /dev/sdg1
+			부팅 장치로 사용로 사용할 수 없다는 메시지 출력되면 y 입력하여 진행
+			mdadm: array /dev/md1 started.
+			
+		파일 시스템 생성
+			#mkfs -t ext4 /dev/md1
+			
+		마운트 포인트 생성 및 마운트
+			#mkdir /RAID-1
+			#mount /dev/md1 /RAID-1
+			
+		UUID 확인 및 fstab 등록
+			#blkid /dev/md1
+			#vi /etc/fstab
+			UUID=[UUID 값] /RAID-1 ext4 defaults 0 0
+			
+		RAID 설정 적용 및 확인
+		#mdadm --detail --scan > /etc/mdadm.conf	// 설정 적용		
+		#mdadm --detail /dev/md1					// RAID 구성 확인

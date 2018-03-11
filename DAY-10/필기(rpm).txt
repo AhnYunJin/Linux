@@ -1,0 +1,159 @@
+
+
+	패키지 관리
+		
+		rpm & yum
+		
+		패키지 - 프로그램이 사용하는 파일들이 묶여있는 파일로 프로그램을 설치한다.
+			   - 윈도우즈에서 install.exe , setup.exe
+			                  setup.msi 와 같은 형태의 파일
+				
+		RPM ( Redhat Package Management )
+		- 래드햇에서 개발한 패키지 관리 도구
+		
+		Server-A에 CentOS-6.9-x86_64-DVD1.iso 파일(CD이미지)
+		을 이용하여 CD-ROM장치 에 삽입.
+		
+		#mount -t iso9660 /dev/cdrom /mnt
+		// iso 이미지 파일에 생성된 파일 시스템 타입 iso9660
+		mount: block device /dev/sr0 is write-protected, mounting read-only
+
+		#cd /mnt
+		#ls 
+		// CentOS DVD 이미지에서 제공하는 기본 패키지 파일들을 확인 할 수 있다. ( Packages 디렉토리 )
+		
+		패키지 파일 이름 구조
+		xterm-253-1.el6.x86_64.rpm
+		
+		[이름]-[버전].[릴리즈].[아키텍쳐].[확장자]		
+		
+		[이름] xterm
+		[버전] 253-1
+		[릴리즈] el6 (Enterprise Linux 6)
+				RHEL 6 버전에서 사용하는 커널에서 동작하는 패키지
+				REHL 6 == CentOS6.x 
+		[아키텍쳐] x86_64
+				x86 Intel CPU 
+				64  64bit 연산을 지원하는 CPU
+				
+				i386 - 32bit CPU 전용 패키지
+				noarch - CPU 구조와 상관없이 모두 사용이 가능한 패키지
+		[확장자] rpm
+		
+					
+		rpm 패키지 설치 ( -ivh )
+			#rpm -ivh [패키지명]
+				-i install
+				-v verbose
+				-h hash (#) 
+					
+			xterm-253-1.el6.x86_64.rpm	
+			// X-Window 환경에서 사용할 수 있는 터미널 프로그램
+			
+			#rpm -ivh xterm-253-1.el6.x86_64.rpm	
+			오류: Failed dependencies:
+			libXaw.so.7()(64bit) is needed by xterm-253-1.el6.x86_64
+			
+			// 의존성 오류
+			// 프로그램이 동작하기 위해서는 참고하는 라이브러리 파일들이
+			   존재한다.
+			   서로 다른 프로그램이 같은 라이브러리 파일을 참고하여
+			   실행되는 경우가 있기때문에, 라이브러리 파일이나, 동작에
+			   필요한 파일이 사전에 설치가되어있지 않으면 패키지를
+			   설치 할 수 없다.
+			
+			   EX) 화면 메세지를 출력하는 프로그램
+				   
+				   문자열 출력 함수 printf() 가 저장되있는 라이브러리
+				   EX) print_lib.so
+
+					A프로그램					B프로그램
+					print_lib.so				print_lib.so
+					-> 화면에 메세지 출력		-> 화면에 메시지 출력
+		
+			// 입출력 관련 오류 발생 시 시스템을 재부팅 한 후, 다시 시도
+			   #mount -t iso9660 /dev/cdrom /mnt
+			   #cd /mnt/Packages
+			   #rpm -ivh xterm-253-1.el6.x86_64.rpm
+			   기존에 CD-ROM에있던 내용과 중복되어 발생하는 에러 메시지
+					
+			#rpm -ivh libXaw-1.0.11-2.el6.x86_64.rpm 
+			오류: Failed dependencies:
+			libXpm.so.4()(64bit) is needed by libXaw-1.0.11-2.el6.x86_64
+			
+			#rpm -ivh libXpm-3.5.10-2.el6.x86_64.rpm 
+			준비 중...    ########################### [100%]
+			1:libXpm      ########################### [100%]
+
+			#rpm -ivh libXaw-1.0.11-2.el6.x86_64.rpm 
+			준비 중...    ########################### [100%]
+			1:libXaw      ########################### [100%]	
+			
+			#rpm -ivh xterm-253-1.el6.x86_64.rpm
+			준비 중...    ########################### [100%]
+			1:xterm       ########################### [100%]
+			
+			
+			의존성 오류를 무시하고 패키지를 설치하는 방법
+			#rpm -ivh [패키지명] --nodeps
+			
+			#rpm -ivh werken-xpath-0.9.4-4.beta.12.6.el6.noarch.rpm 
+			// 의존성 오류 확인
+			#rpm -ivh werken-xpath-0.9.4-4.beta.12.6.el6.noarch.rpm  --nodeps
+			// 의존성 오류를 무시하고 설치를 하면 프로그램의 정상 동작은
+			   보장할 수 없다.
+			   
+			rpm 정보 검색 ( -q )
+			#rpm -q[질의옵션]
+				a 시스템에 설치되어있는 전체 패키지 목록을 확인
+					EX) #rpm -qa
+						#rpm -qa xterm			// 설치 여부 확인
+						#rpm -qa | grep xterm
+				
+				f 파일이 포함되어 있는 패키지명을 출력
+					EX) #rpm -qf /bin/ls			// 파일명 
+				        coreutils-8.4-46.el6.x86_64
+				i	패키지 상세 정보 확인
+					EX) #rpm -qi coreutils	
+				l	패키지 포함된 파일의 목록
+					EX) #rpm -ql coreutils
+				R   패키지의 의존성 확인
+					EX) #rpm -qR coreutils
+						#rpm -qR xterm
+			
+			패키지 삭제 ( -e )
+				#rpm -e [패키지명]		// erase
+				#rpm -e xterm
+				#rpm -qa xterm
+				
+			실습
+				- 검색 능력을 100% 사용하여 인터넷을 통해 figlet 패키지를
+				  다운 받아 Server-A에 설치 하고 사용해보기
+				  
+				   #yum -y install lrzsz 		// xshell 파일 전송 패키지
+				  
+				  사용방법 #figlet Linux ZZANG
+				  
+		yum
+		
+		
+				 
+				  
+				  
+				  
+				  
+				  
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+
+			
+			 
+			

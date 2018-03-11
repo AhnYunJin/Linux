@@ -1,0 +1,334 @@
+
+
+
+
+	Network 관련 파일 및 명령어
+		- /etc/sysconfig/network
+			시스템 네트워크 사용 여부와 Hostname을 설정할 수 있는 파일
+			
+			Hostname 
+			- 네트워크상에 위치한 장치에게 부여하는 이름
+			- IP주소나 MAC주소 대신 사람이 쉽게 사용할 수 있는
+			  이름을 부여하여 각 장치를 구별하는데 사용된다.
+			  
+			#vi /etc/sysconfig/network
+			NETWORKING=yes			// 네트워크 사용 여부
+			HOSTNAME=Server-A		// 호스트네임
+			
+			Hostname 변경
+			(1) 영구적 
+					#vi /etc/sysconfig/network
+					- 부팅 시 network 데몬이 활성화 되어
+					  해당 파일을 읽어들여 Hostname과 Network
+					  사용 여부를 결정한다.
+					  
+			(2) 일시적
+					#hostname [호스트네임]
+					- 다음 번 로그인 시 부터 확인 가능
+					
+		- /etc/resolv.conf
+			- 로컬 네임 서버의 IP주소가 저장되어있는 파일
+			- 도메인을 사용하여 외부와 통신을 하기위해 필요한
+			  IP주소를 제공하는 서버의 정보가 있다.
+			  
+		- /etc/sysconfig/network-scripts/ifcfg-eth[x]
+			- 네트워크 인터페이스 카드 (NIC) / 랜(LAN)카드
+			  설정 파일
+			- ifcfg-eth0 부터 시작하여 포트가 추가될때마다 1씩
+			  증가한다. 
+			  
+			  NIC 종류 
+					포트 1개 -> Single NIC  []
+					포트 2개 -> Dual NIC 	[] []
+					포트 4개 -> Quad NIC    [] [] [] []
+						
+			  VMware Workstation 에서 사용하는 NIC (Virtual Network adaptor)은 포트가 1개이다. 즉, Single
+			  NIC을 사용할 수 있다.
+			  
+	DEVICE=eth0			// 장치명 eth0 -> Ethernet 장치 0번				
+	TYPE=Ethernet		// 통신 타입/환경
+	
+						Ethernet
+						- 물리적인 케이블로 통신 장비와 연결하여
+						  네트워크를 구성한 환경
+	
+	ONBOOT=yes			// 부팅 시 활성화 여부
+
+			#ifup eth0		// 포트를 활성화(up)한다.
+			#ifdown eth0	// 포트를 비활성화(down)한다.
+	
+	NM_CONTROLLED=no		// NetworkManager 데몬이 해당 장치를
+	                           제어하지 못하도록 설정
+							   
+			- NetworkManager 데몬
+				- X-Window 환경을 구성한 시스템에 자동으로 설치가 되는
+				  데몬으로, GUI 환경에서 아이콘 및 그래픽 메뉴를 통해
+				  네트워크 설정을 도와주는 프로그램.
+				  
+			- network 데몬
+				- 네트워크에 관한 전반적인 환경을 구성해주는 데몬
+				- 부팅 시 활성화되어 각 장치의 설정 파일(ifcfg-eth0)
+				  읽어들여 시스템에 적용 한다.
+				  
+			CentOS 6.x 버전에서는 NetworkManager 데몬이 안정화가 되어있지
+			않아 network 데몬과 함께 동작할때 충돌을 일으키는 문제가 있다.
+			(오피셜)
+	
+	BOOTPROTO=static			// IP 주소 할당 방식 
+			
+				static	- 정적IP/고정IP
+				dhcp    - 동적IP/유동IP
+				none    - IP할당 하지 않음
+	
+	// static 설정 시 사용		
+	IPADDR=		
+	NETMASK=	
+	GATEWAY=
+	DNS1= 
+	DNS2=
+	
+			#ping 
+				#ping [IP주소/도메인주소]
+					-c [숫자] 		// 숫자입력한 값만큼 핑메세지를 전송
+					
+				- ICMP 프로토콜을 이용하여 동작하는 프로그램으로
+				  IP주소를 이용하여 패킷이 목적지까지 도착하고
+				  돌아오는데 걸리는 지연 시간을 확인할때 사용하는 명령어
+	
+				탁구 -> Ping Pong
+				A						B
+				ping  ------------------>	네트워크 상태 확인		<--------------------- pong 
+				
+				B컴퓨터와 통신이 되는지 확인할때 사용.
+				
+				
+				NAT와 DHCP 검색해보기
+				
+	VMware Network Type				
+		NAT 
+			NAT-static
+				가상머신에서 사용하는 IP주소를 물리PC가 사용하는
+				IP주소로 변환하여 외부와 통신이 가능한 상태
+				
+					포트 번호
+						- 프로그램이 실행될때 할당되는 주소
+						- 포트 번호의 범위 0 ~ 65535
+						- 0 ~ 1024 Wellknow Port   (잘알려진 포트 root/Server)
+						- 1024 ~ 65535 Client Port 
+						
+	ex) 컴퓨터 크롬	      -> www.naver.com:80 (10000)	<--------	NAVER Web Server
+																httpd (80) 
+																ssh   (22)
+																dns   (53)
+	           익스플로러 -> www.daum.net (20000)   <--------   Daum Web Server
+			   (Client)							
+
+				Xshell (SSH Client)	<------------>   Server-A (SSH Server)
+					   포트 : ?????					 sshd : 22
+				
+				#netstat - 활성화 되어있는 (LISTEN) 포트 정보를 확인
+				
+				#netstat -nltp
+				현재 활성화(l)되어있는 포트와 TCP(t)통신을하는 프로그램의
+				PID(p)정보를 숫자(n)로 출력한다.
+				
+				vi /etc/ssh/sshd_config
+				13번행 Port 22
+				#service sshd restart
+			
+				특정 회사 A부서와 통화하고 싶다.
+				
+				특정 회사 전화 번호
+				1234-5678 		1번 -> A부서
+								2번 -> B부서
+								3번 -> C부서
+								
+				100.100.100.110			22번 -> SSH				
+										80번 -> HTTP
+										53번 -> DNS
+										
+				포트 포워딩
+						NAT는 외부에서 절대 접속을 할 수 없다.
+						
+						아이피:2222 ---> 100.100.100.110:22 
+							  :3333 ---> 100.100.100.110:53
+							  :4444 ---> 100.100.100.120:22
+			NAT-DHCP
+					가상머신에게 동적으로 IP를 할당 할 수 있는 DHCP기능을
+					추가하고, 외부와 통신할때 물리PC의 IP주소로 변환되는 형태
+					
+					Workstation 버전에서는 DHCP 기능을 사용할 수 있다.
+					
+					DHCP - 사용자가 인터넷을 할 수 있도록 모든 정보를
+					       (IP주소,서브넷마스크,게이트웨이,DNS) 자동으로
+						   할당(임대/Lease)하여 편리하게 네트워크를 사용할 수 있도록 하는 기능
+						   
+					#vi /etc/sysconfig/network-scripts/ifcfg-eth0
+					~~~~생략~~~~~~~~~
+					BOOTPROTO=dhcp
+					#IPADDR= 			// 스태틱 설정은 모두 주석 처리 
+				    #NETMASK=
+					#GATEWAY=
+					#DNS1=
+					#DNS2=
+					
+					#service network restart		// Xshell 접속 해제
+					
+					콘솔 화면(Workstation 화면)
+					#ifconfig
+					ip 주소 확인 -> 100.100.100.128 ~ 254 
+					
+					dhcp 서버는 클라이언트에게 할당 ip주소 범위 (ip주소 풀)
+							128 ~ 254
+					
+					
+		Bridge (DHCP)
+					물리pc와 동일한 공유기로(dhcp서버) 부터 IP를 임대받아
+					실제 같은 네트워크 상에 위치하도록 만드는 기능
+					
+					정상적인 환경
+					물리 PC 192.168.6.X   	
+					가상 PC 192.168.6.X 
+					
+					학원
+					물리 PC (고정 IP) 192.168.6.X
+					가상 PC (동적 IP) 192.168.11.X, 192.168.12.X
+					학원 공유기는 192.168.0 ~ 12.X 대역을 관리하며, DHCP를 사용할
+					경우 10~12대역을 클라이언트에게 제공한다.
+					
+					192.168.6.0 == 192.168.11.0 같은 네트워크다.
+					
+					가상머신 사용하는 네트워크 카드 (NAT) -> Bridge
+					#vi /etc/sysconfig/network-scripts/ifcfg-eth0
+					~~~~생략~~~~~~~~~
+					BOOTPROTO=dhcp
+					#IPADDR= 			// 스태틱 설정은 모두 주석 처리 
+					#NETMASK=
+					#GATEWAY=
+					#DNS1=
+					#DNS2=
+					
+					#service network restart
+					#ifconfig
+					
+					192.168.10.70
+					
+					#vi /etc/sysconfig/network-scripts/ifcfg-eth0
+					DHCP를 사용하면서 고정IP사용
+					
+					공유기를 통해 네트워크를 사용하지만, 사용할 IP주소는
+					사용자가 지정.
+					
+					192.168.6.0 / 255.255.255.0 
+					
+					192.168.6.0 ~ 255
+					
+			
+					BOOTPROTO=static
+                    IPADDR=192.168.6.[물리PC+50]
+                    NETMASK=255.255.255.0 
+                    GATEWAY=192.168.6.1
+                    DNS1=8.8.8.8
+                    DNS2=8.8.4.4
+					
+					#service network restart
+					#ifconfig
+					ip주소가 지정해준 ip로 설정되어있는지 확인
+					
+					스마트폰 WIFI 잡아보기
+						SSID : KOREA_H
+						PW   : korea123h
+						
+					안드로이드 : Jucie SSH 		(모바일 ssh클리언트 프로그램)
+					아이폰     : Termius
+	
+					세션 생성 후 자신의 가상머신 IP를 이용하여 접속
+					
+		Host-only 
+			- 외부와 통신이 안되는 내부 네트워크 만들때 사용하는 타입
+			- 물리PC와 Host-only로 설정된 가상머신은 통신이 가능하지만,
+			  가상머신은 외부와 통신이 불가능하기때문에 네트워크 설정 및
+			  내부 환경을 구성할 목적으로 사용한다.
+			  
+			  Server-1 (Host-only)		[  Server-2(nat)]	 외부네트워크
+							eth0 -----> [eth1 ----> eth0] ---->
+			  
+			
+		Server-A 
+			ifcfg-eth0
+			NAT타입-고정IP
+				(1) 설정 파일 내용 변경
+						BOOTPROTO=static
+						IPADDR=100.100.100.110
+						NETMASK=255.255.255.0
+						GATEWAY=100.100.100.2
+						DNS1=8.8.8.8
+						DNS2=8.8.4.4
+				(2) Virtual Network Adaptor Bridge -> NAT
+				(3) ip주소 정보 확인 및 Xshell 접속 
+				
+		NC (NetCat)
+			- 네트워크로 연결된 데이터를 사용하는 툴
+			- cat (표준 입출력), nc (네트워크 입출력) 
+		
+			#yum -y install nc
+			
+			#cat [파일]
+			// cat 입력으로 파일을 전달하여 표준 출력(shell)으로 출력
+					
+					fd 0 (표준입력)	<--- 파일
+					   1 (표준출력) ----> 쉘  
+			
+			#cat > [파일]
+			// 표준 입력을 통해 받은 값을 출력할때 지정한 파일에 저장한다.
+			
+					fd 0 (표준입력)	<--- 직접입력	
+			           1 (표준출력) ----> [파일]
+			
+			
+			Client-Linux
+			#yum -y install nc
+			
+			#nc -l [포트번호]			// 해당 포트를 사용한다.
+			// -l LISTEN 모드로 동작 
+			
+			1:1 채팅 서버/클라이언트
+			Server-A						Client-Linux
+			#nc -l 8888						#nc 100.100.100.110 8888
+					
+					nc:8888(LISTEN)
+			
+			네트워크 리다이렉션
+			Server-A						Client-Linux
+			#nc -l 8888 > TEST_OUT			#cat > TEST_IN
+										    HELLO  <ENTER>
+											<Ctrl +D>
+								
+											#nc 100.100.100.110 8888 < TEST_IN
+			
+			// Server-A 8888번 포트로 들어오는 값을 TEST_OUT으로 출력할 준비
+			   Client-Linux는 Server-A의 8888번 포트에 TEST_IN 파일을 입력
+			   Server-A 8888번 포트로 입력 받은 값을 TEST_OUT 파일로 출력한다.
+			   
+			#cat TEST_OUT
+			HELLO			// Client-Linux로 부터 입력받은 값
+			
+			
+			Server-A					 	Client-Linux
+			#nc -l 8888 < /etc/passwd 
+											#nc 100.100.100.110 8888 > Server-A_passwd
+			
+			A가 /etc/passwd 파일을 8888번 포트로 입력
+			Client가 8888번에 입력의 내용을 Server-A_passwd 파일로 출력
+
+			학원 워크샵 진행으로 다음주에 진행.
+			
+
+
+
+
+			
+	
+	
+			  
+			  

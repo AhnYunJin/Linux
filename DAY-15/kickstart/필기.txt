@@ -1,0 +1,211 @@
+
+
+	Kickstart
+		- 운영체제 설치 필요한 모든 설정과 설치 후에
+		  해야할 설정까지 모두 자동으로 구성해주는 환경이다.
+		  
+	EX) 서버 구축 과정  
+	(1) 서비스가 동작할 서버 컴퓨터 선택
+		(ex CPU, RAM, HDD, 서버실 위치 등)
+	(2) 서버실에 위치한 RACK에 서버 컴퓨터를 설치
+	(3) 케이블 포설 & 전원 케이블 연결
+	(4) 레이드 구성 (H/W RAID)
+	(5) 운영체제 설치
+		(외장 CD-ROM -> 운영체제 설치 CD)
+	(6) 네트워크 설정
+		(Bonding 및 IP설정)
+	(7) 기본 설정
+		(보안 설정, 기본 패키지 설치, 계정 생성)
+	(8) 개발팀이나, 프로젝트팀에게 서버IP주소와 계정정보를 전달
+	
+	PXE (Pre-boot eXecution Environment)
+	- 사전 부팅 실행 환경
+	- 네트워크 인터페이스 (NIC)를 통해 부팅을 하는 환경
+	  (메인보드내에 내장되어 있는 기능)
+	- 설치CD/ISO 이미지 파일 없이 네트워크 통해 운영체제를
+	  설치하거나 부팅할때 사용된다.
+	  
+	가상 머신 생성
+	설치 경로 : 개인폴더
+	이름 : TEST-VM
+	설치 운영체제 : Linux  / CentOS 64-bit
+	하드 디스크   : 20GB		CPU    : 1/1
+	RAM           : 1GB 		스냅샷 : 운영체제 설치 전
+	
+	컴퓨터 전원 입력 -> PXE 동작 -> DHCP서버를 찾는다 ->
+	IP주소 할당 -> 다른 컴퓨터와 통신 할 수 있는 상태
+	
+	킥스타트 서버를 구축을 위한 패키지
+	syslinux	- 부트 로더, 부팅 메뉴 구성을 파일을 제공
+	
+	tftp-server - 시스템 커널 이미지 파일과 부트로더를 전송
+	              할때 사용할 파일 전송 프로그램
+	
+	nfs-utils   - 운영체제 설치 필요한 파일 전송
+	
+	dhcp		- PXE부팅 시 IP를 할당하여 원격지에 데이터를
+	              다운받기 위한 환경 제공
+				  
+Server-B(Kickstart Server) <--> TEST-VM(Client)
+1. 패키지 설치
+   #yum -y install tftp-server syslinux dhcp nfs-utils
+
+2. TFTP 서버 설정
+   #vi /etc/xinetd.d/tftp
+   // xinetd 데몬이 실행하는 프로그램(데몬)이다.
+   // TFTP는 동작 방식이 매우 단순하여 운영체제가 설치되지 
+      않은 컴퓨터에 작은 크기의 파일(부트로더,커널이미지)을 전송할때 사용한다. 
+	
+	13번 server_args = -s /ks/tftpboot
+	14번 disable = no
+	
+	// TFTP를 활성화하고, TFTP가 사용할 디렉토리 경로를
+	   지정한다.
+3. 디렉토리 구조 생성
+	#mkdir -p /ks/tftpboot/{kickstart,pxelinux.cfg,centos6.9}
+	/ks/tftpboot/
+			└ kickstart/		<-- 킥스타트 설정 파일
+			└ pxelinux.cfg/    <-- 메뉴 파일
+			└ centos6.9 /		<-- 커널 이미지 파일
+
+4. DHCP서버 설정
+   #vi /etc/dhcp/dhcpd.conf
+   subnet 100.100.100.0 netmask 255.255.255.0 {
+		range 100.100.100.10 100.100.100.30;
+		option routers 100.100.100.2;
+		option subnet-mask 255.255.255.0;
+		option broadcast-address 100.100.100.255;
+		option domain-name-servers 8.8.8.8, 8.8.4.4;
+		default-lease-time 10000;
+		max-lease-time 20000; 
+		filename "pxelinux.0";
+   }
+   
+   // filename "pxelinux.0";
+   // DHCP서버로 부터 IP를 할당 받은 클라이언트가 TFTP에게
+      전송 요청을할 파일의 이름(pxelinux.0 부트로더)
+	
+	#service dhcpd restart				// 오타 확인
+				  
+5. 시디 이미지 마운트
+   Server-B->Settings->CD/DVD-ROM->Browse
+   ->CentOS-6.9-x86_64-bin-DVD1.iso->OK
+   
+   #mount -t iso9660 /dev/cdrom /mnt
+   mount: block device /dev/sr0 is write-protected, mounting read-only
+	
+6. NFS 설정
+   // NFS, FTP, HTTP 등 여러 프로토콜을 이용하여 Kickstart환경을
+      구성 할 수 있다.
+	  
+  #vi /etc/exports
+  /mnt 100.100.100.0/24(ro)
+  /ks/tftpboot/kickstart 100.100.100.0/24(ro)
+  	  
+  /mnt <- 운영체제 설치에 필요한 패키지가 저장되어있는 디렉토리 (설치CD)
+  /ks/tftpboot/kickstart <-킥스타트 설정 파일이 저장되어있는 디렉토리   
+	  
+7. 파일 복사
+	#cp /usr/share/syslinux/{pxelinux.0,menu.c32} /ks/tftpboot
+	#cp /mnt/images/pxeboot/{initrd.img,vmlinuz} /ks/tftpboot/centos6.9/
+
+	/usr/share/syslinux/<- syslinux 패키지 파일이 위치한 디렉토리
+	- pxelinux.0 	부트 로더 
+	- menu.c32		메뉴 구성 파일
+	- initrd.img	램디스크 초기화 이미지 파일
+				    (커널이 사용하는 장치 드라이버(모듈)이 압축되어있는 파일)
+	- vmlinuz       커널이 동작하기 위한 파일이 압축되어있는 파일
+	
+8. 킥스타트 메뉴 파일
+   #vi /ks/tftpboot/pxelinux.cfg/default
+   default menu.c32
+   prompt 0				// 메뉴 출력 여부 (0 -> 출력)
+   timeout 600			// 메뉴 대기 시간 60초
+   ontimeout local		// 메뉴 대기 시간이 초과됬을때 실행할 LABEL 명
+   
+   LABEL local						 // 설정을 구별하기 위한 이름
+   MENU LABEL	^0) Boot Local Hard Disk	// 메뉴에 출력될 내용
+   localboot 0		// 시스템이 인식하는 부팅 장치로 부팅 
+					// 보통 하드 디스크로 부팅된다.
+					
+   LABEL CentOS6.9
+   MENU LABEL 	^1) CentOS6.9 64bit Kickstart (NFS)
+   KERNEL /centos6.9/vmlinuz
+   // tftpboot 상대 경로 
+	  절대경로 -> /ks/tftpboot/centos6.9/vmlinuz
+   APPEND initrd=/centos6.9/initrd.img load_ramdisk=1 network
+   // initrd.img 파일이 위치한 경로
+   ksdevice=link ks=nfs:100.100.100.120:/ks/tftpboot/kickstart/ks.cfg
+   
+   network, ksdevice, ks=nfs:
+   네트워크를 통해 Kickstart 설정 파일을 다운받을 경로
+   
+   ksdevice=link 
+   // 현재 활성화되어있는 장치라는 의미
+   // eth0, bond0 사용 가능
+   
+   // 이어서 작성 <Enter> 입력 없이 개행 하지말고 한줄로 작성 
+   
+9. 서비스 기동
+   #service xinetd restart
+   #service dhcpd restart
+   #service rpcbind restart
+   #service nfs restart
+   #service iptables stop
+   #setenforce 0
+   
+10. 킥스타트 설정 파일
+	공유폴더 -> ks.cfg 파일을 /ks/tftpboot/kickstart/ 디렉토리로 전송
+	(1) #vi /ks/tftpboot/kickstart/ks.cfg 	//복사 붙여넣기
+	(2) #yum -y install lrzsz 				// 파일 전송 패키지를 이용
+	
+11. 테스트
+	(Server-B 	<-->  TEST-VM)
+	NFS
+	TFTP        <-->  PXE
+	DHCP
+
+12. 구글 검색어
+		-> redhat 킥스타트
+		-> 32.4. 킥스타트 옵션 - Red Hat Customer Portal
+		-> https://access.redhat.com/documentation/ko-kr/red_hat_enterprise_linux/6/html/installation_guide/s1-kickstart2-options
+	
+	ks.cfg  파일 하단에
+	%packages		// 설치 시 함께 설치할 패키지 이름
+	@core
+	@korean-support	//		@ 그룹 패키지를 의미
+	[패키지명]
+	%end
+	
+	TEST-VM 가상머신 초기화 아래 실습 진행
+	아래 조건을 만족하는 설정을 Redhat 홈페이지에서 찾아
+	ks.cfg 파일에 추가하여 킥스타트 설치 후 적용 확인해보기
+		
+		사용자 계정 추가
+		계정명 : KICKSTART
+		UID    : 1000
+		패스워드 : 123456
+	
+	user --name=KICKSTART --uid 1000 --password=123456
+	
+	TEST-VM								KICKSTART (Server-B)
+	(1) PXE가 동작하여 DHCP 서버를 찾는다 ----------------->
+	<-------------------- (2) TEST-VM 에게 IP주소를 할당한다
+	(3) IP주소가 설정되어 통신을 할 수 있는 상태가되어 TFTP
+	    로부터 부트로더를 다운 받아 실행한다.
+	<--------------------- (4) 메뉴 파일을 전송한다.
+	(5) 메뉴를 선택한다 ----------------------------------->
+	<-----------------------(6) 옵션에 따라 커널이미지와 패키지
+	다운 로드 경로를 통해 커널이 실행되고, 설치 프로그램이
+	동작하여 ks.cfg에 작성되어있는 내용을 이용하여 운영체제를
+	하드디스크에 설치한다.
+	  
+	  
+	  
+	  
+	
+	
+	
+	
+		
+	

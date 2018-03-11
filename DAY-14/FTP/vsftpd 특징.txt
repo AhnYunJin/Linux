@@ -1,0 +1,14 @@
+1. vsFTP
+Cris Evans에 의해 개발된 GPL기반의 FTP서버로 매우 안정적이면서 빠른속도와 
+강력한 보안기능을 제공하는 프로그램이다.
+ 
+2. vsFTP의 특징
+홈페이지 : http://vsftpd.beasts.org
+           ftp://vsftpd.beasts.org/users/cevans (소스)
+   - 가상 유저 설정을 통하여 계정의 쉘 로그인을 방지하여 안전한 서버운영을 지원
+   - Standalone 또는  inetd 모드로 효율적인 데몬 관리 지원
+   - 효율적인 서버관리를 위한 대역폭 조절 기능 지원 ( 전송량 제한)
+   - 암호화된 패스워드를 통한 보안 강화 지원
+   - 가상 호스트 기능 지원으로 아이피마다 독립적인 FTP 운영
+   - TCP wrapper 통합으로 IP 접근제어 설정 가능
+   - ASCII 모드로 파일이 전송되는 것을 금지하여 DoS 공격 방지

@@ -1,0 +1,20 @@
+1.가상 머신 생성 & OS설치 
+ - 모든 설정은 까페에 자세히 있으니 확인해보기. (http://cafe.naver.com/d3linux)
+ - 진행 시 궁금한 내용은 언제든지 질문하기.     (※가상머신 생성 경로 -> 개인 폴더※)
+	(1) Server-A  		1P/1C	  HDD 20GB 	RAM 1GB  CentOS 6.9
+	(2) Server-B  		1P/1C	  HDD 20GB 	RAM 1GB  CentOS 6.9 
+	(3) Client-Linux  	1P/1C	  HDD 20GB 	RAM 1GB  CentOS 6.9 
+	(4) Client-Windows  1P/1C	  HDD 40GB  RAM 1GB  Windows7-64bit
+2.네트워크 설정 및 기본 설정
+	(1)Server-A  IP 100.100.100.110  	(3)Client-Linux  	IP 100.100.100.130
+	(2)Server-B  IP 100.100.100.120  	(4)Client-Windows	IP 100.100.100.140
+	- 리눅스 가상 머신 기본 설정
+		#yum -y install vim								#chkconfig iptables off
+		#yum -y install lrzsz           				#setenforce 0
+		#service iptables stop          				#vi /etc/sysconfig/selinux
+		#vi /etc/bashrc			// 하단에 내용 추가		7번행 SELINUX=disabled	// 변경
+		alias vi="vim"                               
+		alias grep="grep --color=auto"                               
+3.검사 요청 후, Shutdown 후 스냅샷 찍기 	
+	- 개인 세션 폴더 생성, Server-A, B, Client-Linux 세션 파일 생성
+	- 모든 가상 머신에서 #ping 8.8.8.8 명령어 입력 후 검사 요청 -> 검사 완료 시 셧다운 후 스냅샷

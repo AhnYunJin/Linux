@@ -1,0 +1,160 @@
+
+	
+	NFS (Network File System)
+	- 네트워크를 통해 공유된 원격지 호스트에 자원을(저장공간)
+	  로컬 호스트에 마운트(탑재)하여 파일을 공유하는데
+	  사용되는 프로그램
+	
+	/etc/exports
+		- nfs 주 설정 파일, nfs 서버에서 공유할 정보가
+		  저장되어있는 파일
+	/etc/fstab
+		- 부팅 후에도 nfs로 공유한 디렉토리를 사용하기위한
+	      정보가 저장되어있는 파일
+	/etc/sysconfig/nfs 
+		- nfs 서버에서 사용하는 프로그램들에 할당되는 포트번호
+		  정보가 저장되어있는 파일
+	
+	Server-A (NFS Server)
+	#yum -y install nfs-utils
+	// nfs 관련 프로그램 설치
+	
+	#mkdir /NFS_Server-A
+	#chmod 777 /NFS_Server-A
+	// 서버에서 공유할 디렉토리와 디렉토리에 접근이 가능하도록
+	   허가권 수정
+	   
+	#vi /etc/exports
+	[공유 디렉토리 경로] [접근을 허용할 IP주소](공유 옵션)
+	/NFS_Server-A 100.100.100.0/24(rw,sync,no_root_squash,no_all_squash)
+	
+	rw - 공유 디렉토리에 대한 읽기 및 쓰기를 허용하는 옵션
+	sync - 공유 디렉토리에 변경이 있을때 변경된 내용을 즉시 동기화하는 옵션
+	
+	no_root_squash - 클라이언트에서 root 계정으로 공유디렉토리를 사용할 경우
+	                 서버 root 계정과 동일하게 인식하도록한다.
+					 
+	   root_squash - 클라이언트에서 root 계정으로 공유디렉토리를 사용할 경우
+					 서버에서는 nfsnobody라는 계정으로 인식하도록한다.
+	
+	no_all_squash  - 클라이언트의 사용자 계정과 서버의 사용자계정이 동등한
+	                 권한을 갖도록 한다.
+					 
+	   all_squash  - 클라이언트의 사용자 계정은 서버에서 nfsnobody라는 
+	                 계정으로 동작하도록한다.
+	
+	#exports 
+		- nfs서버 데몬을 다시 시작하지 않고 공유 목록(/etc/exports)의 
+		  변경 사항을 적용 시킬 수 있는 명령어
+		  
+		  -r /etc/exports 파일을 적용
+		  -v 공유 디렉토리 목록을 출력
+					 
+
+	#service rpcbind start
+	#service nfs start
+	// 데몬의 동작 순서가 중요하다.
+	// NFS 서비스는 RPC기반으로 동작하기때문에 RPC데몬이 먼저 실행되고
+	   있어야 NFS가 정상적으로 동작한다.
+	   
+		RPC (Remote Procedure Call)
+		- 네트워크를 통해 연결된 다른 컴퓨에서 동작중인 프로그램에게
+		  서비스를 요청할때 사용하는 프로토콜(프로그램)
+		  
+		#rpcinfo -p
+		RPC기반으로 동작하는 프로그램의 이름과 포트번호 정보 확인
+		
+		rpc.portmapper (111)
+			- rpc 프로그램들이 각 지정된 포트를 사용하도록 한다.
+			
+		rpc.mountd (???)
+			- nfs 클라이언트가 마운트 요청 시 /etc/exports 설정에딸
+			  마운트 정보를 제공해주는 프로그램
+			  
+		rpc.nfsd (2049)
+			- 공유된 디렉토리를 사용할 수 있는 환경을 구성해준다.
+			
+		rpc.rquotad (???)
+			- 공유 디렉토리에 Quota 적용 시 사용하는 프로그램
+			
+		rpc.lockd (???)
+			- 여러 클라이언트가 동시에 하나의 파일을 사용할 수 없도록
+              만들어주는 프로그램			
+	   
+		rpc.statd (???)
+			- 비정상적으로 nfs 서버가 종료되었을때 복구를 도와주는
+			  프로그램
+	   
+		#vi /etc/sysconfig/nfs 
+		제일 하단에 내용 추가
+		STATD_PORT=4000
+		LOCKD_TCPPORT=4001
+		LOCKD_UDPPORT=4001
+		MOUNTD_PORT=4002 
+		RQUOTAD_PORT=4003
+		// 유동 포트를 사용하는 각 프로그램에게 사용할 포트를 지정하는 작업 
+		// iptables가 동작하고 있다면 해당 포트에대해서만 연결을 허용하는
+		   규칙을 추가하여 nfs 서비스에 접속이 가능하도록 설정할 수 있다.
+		   
+		#service rpcbind restart
+		#service nfs restart
+		#rpcinfo -p
+		
+		Client-Linux
+		#yum -y install nfs-utils
+		#showmount -e 100.100.100.110 
+		Export list for 100.100.100.110:
+		/NFS_Server-A 100.100.100.0/24
+		
+		#mount [대상] [마운트포인트]
+		ex) #mount /dev/sdb1 /APP-1
+		
+			   [	 	대상			   ] [마운트 포인트]
+		#mount 100.100.100.110:/NFS_Server-A /mnt 
+		
+		NFS Server(Server-A)			NFS Client(Client-Linux)
+		#cd /NFS_Server-A				#cd /mnt
+		#touch file1					
+										#ls
+										#mkdir Client-dir1
+		#ls
+		
+		#vi /etc/fstab
+		[연결대상] [마운트포인트] [파일시스템] [옵션] [덤프] [검사]
+		100.100.100.110:/NFS_Server-A /mnt nfs defaults 0 0
+		
+		#reboot
+		#df -h		// 재부팅 후에도 마운트된 상태인지 확인
+		
+NFS Server 									  NFS Client 			
+-서버에서 패키지 설치						  -클라이언트에서 패키지 설치
+-패키지 설치 확인                             -마운트 포인트 생성	
+-공유 디렉토리 생성          			      -마운트 가능 여부 확인
+-공유 디렉토리 허가권 설정                    -마운트
+-/etc/exports 파일 생성					      -NFS 동작 확인
+( 공유할 클라이언트 IP / 옵션 ) 			  -/etc/fstab 등록
+-exportfs 명령을 이용하여 exports 파일 적용   -NFS서버-클라이언트 구축완료
+-/etc/exports 파일 적용 확인                  -파일 복사 테스트
+-고정 포트 설정 (생략)                       
+-데몬 기동      
+====================================================================================
+			NFS-Server(Server-B)				NFS-Client (Client-Linux)
+	Server Directory : /NFS_Server-B			
+	Client Directory : /NFS_Client-B
+	읽기 전용으로 생성 하도록 하며, 클라이언트 root계정과 일반 사용자 계정이 공유 디렉토리 접근 시 익명(nfsnobody)사용자 계정으로 인식하도록한다.
+	부팅 시 자동으로 마운트 되도록 설정 하며, 그 외 옵션은 모두 기본값으로 지정한다.
+	※ 참고해야하는 옵션은 모두 공유 폴더에 있으니 확인 후 사용 할 것 ※
+	
+	
+			
+	
+		
+		
+		
+		
+	
+	
+		  
+		  
+	
+	

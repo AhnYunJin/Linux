@@ -1,0 +1,4 @@
+
+
+NFS설정 참고 사이트
+https://docs.oracle.com/cd/E56343_01/html/E53867/index.html

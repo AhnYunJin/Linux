@@ -1,0 +1,84 @@
+	
+	
+	APM 환경 구성
+	(1) #yum -y install httpd mysql mysql-server php php-mysql
+		#service httpd start 
+	
+	(2) #rpm -qa httpd php mysql-server
+
+	(3) #service mysqld start
+		#mysqladmin -u root password 'password1!‘	// 관리자 계정 
+		#mysql -u root –p
+		Enter password : 
+		mysql>show databases;
+		mysql>create database web;		// web 데이터베이스 생성
+		mysql>show databases;
+		mysql>exit;
+		
+	(4) 공유폴더 pydio-core-6.0.2.tar.gz 파일을 /var/www/html 디렉토리 전송
+	
+	#yum -y install lrzsz 		// 파일 전송 프로그램 설치
+	#tar xvf pydio-core-6.0.2.tar.gz
+	// 아카이브와 압축 해제
+	
+	pydio-core-6.0.2 디렉토리 확인
+	
+	ex) www.dongsam.com/pydio-core-6.0.2
+	    주소가 복잡해진다.
+		
+	#mv pydio-core-6.0.2 webhard
+	ex) www.dongsam.com/webhard
+	
+	#chmod 707 webhard
+	#chown -R apache:apache webhard
+	
+	
+	#yum -y install php-*		
+	#yum -y install epel-release	
+	#yum -y install php-mcrypt	
+
+	IPTABLES
+	#service iptables start
+	#chkconfig iptables on 
+	
+	#iptables -L 	// 규칙 확인
+
+	
+	#alias LIST="iptables -nL --line-number"
+
+	규칙 삭제
+	#iptables -D [체인명] [번호]
+	
+	
+	INPUT 체인
+	1번 	규칙A
+	2번		규칙C			-> 규칙 B,C 삭제
+	3번 	규칙D
+	
+	#iptables -D INPUT 2
+	#iptables -D INPUT 2
+	
+	기본 정책 구성
+	#iptables -P INPUT DROP
+	#iptables -P OUTPUT ACCEPT
+	#iptables -P FORWARD DROP
+	
+	#iptables -F
+	규칙 초기화
+	
+	SSH 접속하기
+	#iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+	#service iptables save
+	
+	
+	
+	
+	
+	
+	
+		
+		
+		
+		
+		
+		

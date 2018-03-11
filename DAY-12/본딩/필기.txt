@@ -1,0 +1,120 @@
+
+
+	Bonding
+	- 네트워크 카드 이중화
+	- Server-A, Server-B, Client-Linux 사용 예정  
+		
+	Server-A 본딩 구성 
+	1. 네트워크 카드 추가
+		VMware Workstation -> Server-A -> Settings -> Add
+		-> Network Adaptor (NAT)
+		
+	2. 네트워크 카드 추가 확인
+		#ifconfig -a 				
+		// -a (all) 비활성화된 장치를 포함하여 확인
+		
+	3. 네트워크 카드 설정 파일 생성
+	   #cd /etc/sysconfig/network-scripts
+	   
+	   #vi ./ifcfg-eth0			// #vi ./ifcfg-eth1 
+	   DEVICE=eth0				// eth0과 동일하게 작성
+	   TYPE=Ethernet			// DEVICE=eth1 해당 부분만 변경
+	   ONBOOT=yes				
+	   BOOTPROTO=none
+	   USERCTL=no				// 일반 사용자 계정으로 해당 장치를
+	   NM_CONTROLLED=no			// 제어할 수 없도록 설정 
+	   SLAVE=yes				
+	   MASTER=bond0				
+	   
+	   // SLAVE=yes    본딩의 구성요소로 동작하기 위한 설정
+	   // MASTER=bond0 본딩 구성 시 사용할 논리적인 장치명						
+	   
+	   #vi ./ifcfg-bond0	
+	   DEVICE=bond0
+	   TYPE=Ethernet
+	   ONBOOT=yes
+	   USERCTL=no
+	   NM_CONTROLLED=no
+	   BOOTPROTO=static
+	   IPADDR=100.100.100.110
+	   NETMASK=255.255.255.0
+	   GATEWAY=100.100.100.2
+	   DNS1=8.8.8.8
+	   DNS2=8.8.4.4
+	   BONDING_MASTER=yes  				// 본딩 주체 여부
+	   BONDING_OPTS="mode=1 miimon=100" // 본딩 옵션
+	   // mode=1		mode 1 Active/Backup
+	   // miimon=100    모니터링 주기 (ms)
+		
+	4. /etc/modprobe.d/bonding.conf 파일 생성
+       #vi /etc/modprobe.d/bonding.conf
+	   alias bond0 bonding
+	   options bond0 mode=1 miimon=100
+	   
+	   // 커널에게 전달할 본딩 설정을 저장하고있는 파일
+	   // 본딩 사용하기위한 모듈명 -> bonding
+	   // 알리아스를 사용하여 이름을 bonding 모듈의 이름을
+	      bond0으로 사용할 예정
+	   // 본딩에 설정할 옵션은 ifcfg-bond0 파일이나 bonding.conf
+          둘 중에 하나만 작성해도 적용된다.
+	
+	5. 커널에 본딩 설정 적용
+	    #modprobe bond0 			// #modprobe bonding
+		// 원격에서 작업중이라면 연결이 해제된다.
+	   
+	6. 네트워크 데몬 재시작
+		#service network restart
+		// 현재까지의 모든 설정을 적용하기 위해 네트워크 데몬 재시작 
+		// 원격 접속 시도
+	
+	7. 설정 확인
+		1. #ifconfig
+			- bond0 장치가 활성화되어있는 확인
+			- IP주소 확인
+		2. #cat /proc/net/bonding/bond0
+			- Bonding Mode
+			  -> fault-tolerance (active-backup)
+			- Currently Active Slave
+			  -> 현재 활성화(Active)되어있는 장치명
+			  -> ex) eth0 
+			- MII Status & Interval 
+			  -> Status up 		// 모니터링하고 있는 상태(up)
+			  -> 100ms 			// 0.1
+
+			- Slave Interface
+			  -> 본딩 구성 장치들의 정보
+			- Link Failure Count 
+			  -> 링크가 다운(Down)된 회수
+			  -> 해당 장치를 통해 네트워크를 사용할 수 없을때마다
+			     숫자가 1씩 증가한다.
+			
+	8. 절체 테스트 
+			
+			실무 환경
+				- 랜선을 번갈아가며 제거하여 통신 테스트
+			
+			가상 환경 
+				- Workstation 네트워크 아이콘을 사용
+				
+			세션-1						
+			#ping 8.8.8.8						
+			// 통신 이상 유무 확인
+			
+			세션-2			
+			#watch -d -n 0.1 "cat /proc/net/bonding/bond0"
+			
+		- 본딩을 구성한 후에 절체 테스트를 하는것이 매우 중요하다.
+		
+		- 테스트를 하지 않고 설정만 확인하게되면, 실제 장애가 발생
+		  했을때 네트워크가 되지 않는다면, 본딩을 설정한 관리자가
+		  모든 책임을져야한다.
+	   
+	   
+	   
+	   
+	   
+		
+		
+		
+		
+	

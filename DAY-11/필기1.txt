@@ -1,0 +1,154 @@
+
+
+		Local Repository Server
+			
+			Server-A
+				(1) CentOS DVD 이미지를 삽입
+				(2) #mount -t iso9660 /dev/cdrom /mnt
+				(3) #cd /etc/yum.repos.d
+				    #mkdir ./backup	
+					#mv CentOS-* ./backup
+					// 원본 repo파일을 yum이 사용하지 못하도록
+					   잠시 backup 디렉토리에 보관
+				(4) #vi dongsam.repo
+					[dongsam-repo]
+					name=Server-A Repository
+					baseurl=file:///mnt
+
+					// file:// 시스템상에 경로를 표현할때 사용
+					   하는 형식 
+
+					// mnt (CD) == 공식 Repo서버
+					
+					#yum clean all 
+					// 기존 패키지 목록 파일을 삭제
+					
+					// yum 사용 -> /etc/yum.repos.d 아래 위치한
+					   .repo 파일을 확인 -> dongsam.repo 
+					   -> baseurl -> cd이미지 /mnt
+					   
+	실습 준비
+		/etc/yum.repos.d/backup 디렉토리에 위치한 원본 repo파일을 /etc/yum.repos.d 디렉토리 이동을 한 후,
+		dongsam.repo 파일을 backup 디렉토리로 이동시킨다.
+		#yum clean all 입력 후 아래 조건과 일치하도록 설정
+		
+		조건 - yum 명령어 사용 시 항상 naver 저장소에서 패키지를  다운받을 수 있도록 CentOS-Base.repo 파일을 편집한다.
+		기본적으로 사용하는 [base], [updates], [extras]
+		저장소의 정보를 변경한다. 
+		(네이버 저장소 주소는 https://www.centos.org/download/mirrors/
+         접속하여 찾아보기)
+		 
+		각 저장소의 식별자를 [naver-base], [naver-updates] [naver-extras] 형식으로 변경한 후,
+		#yum install httpd 사용 하여 패키지를 네이버에서
+		[naver-XXXXX] 다운 받으면 성공
+			   
+		1. mirrorlist가 동작하지 못하도록 주석 처리
+		2. 각 저장소의 baseurl 주석 해제
+		3. 저장소 식별자 변경
+			
+		
+		그룹 패키지 
+			- 특정 환경을 구성하기 위해 필요한 패키지를 그룹으로
+			  묶어 쉽게 설치할 수 있도록 만든 패키지
+			  
+			  ex) X-Window 환경을 구성한다.
+				  -> 필요한 패키지 400개
+				
+				 #yum -y install [패키지1] [패키지2] ... [패키지400] 
+				  -> 사용하기 어렵다
+				  
+				  #yum -y groupinstall [X-Window 그룹패키지]
+				  -> 400개 패캐지가 X-Window 그룹 패키지에 포함되어있어
+				     설치가 훨씬 간편하다.
+			  
+			  #yum grouplist
+				// 그룹 패키지 목록 확인
+				#yum grouplist | more
+			  
+			  #yum groupinstall 
+				// 그룹 패키지 설치
+				
+			  #yum groupinstall 백업 서버
+			  설치가 불가능함 -> (1) 패키지명이 한글이다.
+								     #echo $LANG
+									 ko_KR.UTF-8		// 한국어
+									 #LANG=en_US.UTF-8
+									 #echo $LANG
+									 en_US.UTF-8		// 영어
+									 #yum grouplist | more
+									 #yum groupinstall Backup Server
+									 -> 설치 불가
+								 (2) yum 명령어는 설치할 패키지를
+								     공백문자로 구별한다.
+									 
+									 Backup  패키지,  Server 패키지
+	
+  #yum groupinstall -y "X Window System" "Desktop" "Fonts" "Korean Support"
+								     
+									 인자를 확장 해석하지 않도록 쿼터(따옴표)
+									 를 이용하여 묶어준다.
+									 
+									 #yum groupinstall "Backup Server"
+	
+	yum 명령어 실패 시 확인 및 조치사항
+		
+		- yum 프로세스는 순차적으로 실행된다.
+			ex) yum install vim 
+			    yum install lrzsz
+				yum은 vim 설치가 모두 끝나면 lrzsz를 설치한다.
+				(동시에 설치 하지 않는다.)
+				
+				특정 이유 (통신 불가, 설정 파일 오타)때문에 yum 동작하지
+				않을 경우, yum 프로세스를 종료 시키기위해 Crtl + C 단축키를
+				사용한다.
+				
+				yum 프로세스가 동작중일때는 Crtl + C 종료할 수 없다.
+				Ctrl + C가 동작하지 않아, Ctrl + Z키를 사용한다.
+				-> 프로세스 중지
+				프롬프트가 출력되어 다시한번 YUM 명령어를 실행.
+				
+				먼저실행 yum 프로세스 (중지) -> 다른 yum 프로세스 실행
+				-> 무한정 대기 상태
+				
+				중지되어 있는 yum 먼저 종료 시킨 후 사용
+				// kill 명령어 이용하여 프로세스 종료
+				
+		- 리졸빙을 할 수 없는 경우
+			리졸빙(Resolving/해석)
+			#yum 명령어 사용 -> 네트워크 사용 -> 도메인 주소 -> 저장소 서버 접속
+			
+				도메인 주소 -> 사람이 사용하는 주소
+				아이피 주소 -> 컴퓨터가 사용하는 주소
+					
+				시스템이 사용하는 도메인주소를 IP주소로 변경하는 작업 -> 리졸빙
+				
+				도메인을 사용했을때 가장 먼저 도메인에대한 IP주소를 질의하는 서버 -> 로컬네임서버 (로컬DNS서버)				
+				
+				로컬DNS서버 설정 -> /etc/resolv.conf
+				nameserver 8.8.8.8			// Google DNS1 1차
+				nameserver 8.8.4.4 						   2차
+				
+				#yum -> CentOS-Base.repo -> baseurl 혹은 mirrorlist 에 작성된
+				주소를 확인 -> http://mirror.navercorp.com ... (도메인주소)
+				-> 8.8.8.8 서버에게 리졸빙 요청 -> 8.8.8.8 서버가 ip주소를
+				Server-A에게 전달 -> 전달받은 IP주소를 가지고 저장소 서버에 접속.
+				
+			
+		
+		
+		
+		
+		
+		
+		
+		
+		
+				
+		
+					
+					
+					
+					
+					
+					
+					   

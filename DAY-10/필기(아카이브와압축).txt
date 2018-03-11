@@ -1,0 +1,212 @@
+
+
+
+		아카이브와 압축
+			#mkdir -p /practice/compress
+			#cd /practice/compress
+			#cp /usr/lib/locale/locale-archive ./file1
+			#cp file1 file2
+			#cp file2 file3
+			#ls -lh
+			file1 file2 file3 	// 파일 용량 95M
+			
+	압축
+		
+		압축 유틸리티 
+			gzip
+				#gzip [파일명]
+				결과 : [파일명].gz 
+				
+				-[1~9]		-1 압축속도가 가장 빠르며, 압축율은 낮음
+							-9 압축속도가 가장 느리며, 압축율은 높음
+							-6 기본값
+				
+				#time - 명령어 실행에 걸린 시간을 측정해주는 명령어 
+					#time [명령어]
+					
+				#gzip file1					// -6 
+				#ls
+				file1.gz 					// 22MB
+				
+				#time gzip -1 file2			// 1.2초 (23MB)
+				real	0m1.274s			// 실제 소요된 시간
+				user	0m0.768s			// 사용자 영역에서 동작한 시간 
+				sys		0m0.503s			// 커널 영역에서 동작한 시간
+											// user + sys = real
+			
+				#time gzip -9 file3 		// 36초 (22MB)
+				
+				압축해제
+					#gunzip	[파일명].gz
+					#gzip -d [파일명].gz	// -d (decompress)
+							
+					// 압축과 관련된 명령어는 인자를 여러개 사용할 수 있다. 그리고 모든 압축 유틸리티에는 -d 옵션이 존재한다.
+					ex) gzip file1 file2 file3
+					ex) gzip file* 
+					ex) gzip -d file1.gz 
+									
+			bzip2
+					#bzip2 [파일명] 
+					결과 : [파일명].bz2
+					
+					#bzip2 file1
+					#ll -h
+					file1.bz2		// 20M
+					
+					압축해제
+					#bunzip2 [파일명].bz2
+					#bzip2 -d [파일명].bz2
+					
+					#bunzip2 file1.bz2
+					
+			xz 
+				#xz [파일명]
+				결과 : [파일명].xz
+			
+				// 만약 xz 명령어가 없다면 #yum -y install xz 이용하여
+				   설치 후 진행
+				
+				#xz file1
+				#ll -h
+				file1.xz				// 3.0M 
+				
+				압축해제
+				#unxz [파일명].xz
+				#xz -d [파일명].xz
+				
+				#unxz file1.xz
+				
+				프로그램		확장자
+				gzip			.gz
+				bzip2			.bz2
+				xz				.xz
+				
+	아카이브 (Archive)
+		- 파일 묶음
+		- 여러개의 파일을 하나의 파일로 묶는다.
+		- 아카이브 파일은 확장자 .tar 사용한다.
+		- Tape 저장 장치에 데이터를 저장할때 사용하는 방식.
+		- 파일을 묶어서 사용할 뿐, 용량 줄지 않아 비효율적이다.
+          그래서 이러한 아카이브 파일을 다시 압축을 하여 사용한다.
+		  ( 아카이브 + 압축 )
+		
+		tar (Tape ARchive)
+			옵션 	-c 아카이브 파일 생성
+					-x 아카이브 파일 해제
+					
+					-v 진행 과정을 출력
+					-f 아카이브 파일을 지정
+					
+					-t 아카이브 파일내에 내용 확인
+					-r 새로운 파일을 기존 아카이브에 추가
+					
+			1. 아카이브 생성 하기 ( cvf )	
+				#tar cvf [아카이브].tar [파일1] [파일2] .. [파일N]
+				// 여러개의 [파일]을 [아카이브].tar 파일로 묶는다.
+				
+				#tar cvf fileA.tar file1 file2 file3
+				
+			2. 아카이브 해제 하기 ( xvf )
+				#rm -f file{1..3}		//원본 파일 삭제
+				
+				#tar xvf fileA.tar
+			
+			3. 아카이브에 파일 추가 하기 ( rvf )
+				#cp file1 file4
+				
+				#tar rvf fileA.tar file4
+				
+			4. 아카이브 파일 내용 확인 ( tvf ) 
+				#tar tvf fileA.tar
+				
+			5. 특정 디렉토리에 아카이브 해제하기 ( -C )
+				#mkdir test
+				#tar xvf fileA.tar -C ./test
+				#cd test
+				#ls
+				file1 file2 file3 file4
+				
+	아카이브와 압축 실습
+	#cd /practice/compress
+	#ls
+	file1 file2 file3				// 그외에 파일이나 디렉토리는 삭제
+		
+
+		1. 현재 경로에 있는 file1 ~ file3을 gzip_test 라는 이름으로 묶어라.
+		2. 현재 경로에 있는 file1 ~ file3을 bzip2_test 라는 이름으로 묶어라.
+		3. 현재 경로에 있는 file1 ~ file3을 xz_test 라는 이름으로 묶어라.	
+		
+		4. gzip_test.tar 파일을 gzip을 압축
+		5. bzip2_test.tar 파일을 bzip2을 이용하여 압축 
+		6. xz_test.tar 파일을 xz을 이용하여 압축
+		
+		7. gzip_test.tar.gz	,  bzip2_test.tar.bz2 , xz_test.tar.xz 파일을 decompress
+		라는 디렉토리를 생성하여 해당 디렉토리로 전부 이동
+		
+		8. decompress 디렉토리에 gzip, bzip2, xz 디렉토리 생성하여
+		gzip 파일은 gzip 디렉토리로 복사
+		bzip2 파일을 bzip2 디렉토리로 복사
+		xz 파일을 xz 디렉토리로 복사
+		
+		9. 각 디렉토리 (gzip,bzip2,xz)에 접근하여 압축&아카이브를 해제 하여 원본파일
+		(file1, file2, file3)을 사용할 수 있도록 명령어 입력
+		
+		ex) gzip_test.tar.gz
+		    
+			#gunzip gzip_test.tar.gz
+			-> gzip_test.tar
+			#tar xvf gzip_test.tar
+			-> file1 file2 file3
+			
+		#cd /practice/compress
+		#ls 
+		file1 file2 file3 /decompress/
+		
+		tar 명령어를 이용하여 압축과 아카이브를 동시에 하는 방법
+		옵션 -z gzip
+			 -j bzip2
+			 -J xz
+			 
+		#tar cvfz fileA.tar.gz file1 file2 file3	 
+		// file1 ~ 3 아키이브로 묶고, gzip으로 압축 한다.
+		-> fileA.tar.gz
+		#tar cvfj fileB.tar.bz2 file1 file2 file3
+		-> fileB.tar.bz2
+		#tar cvfJ fileC.tar.xz file1 file2 file3
+		-> fileC.tar.xz
+
+		#mkdir A B C
+		#mv fileA.tar.gz A
+		#mv fileB.tar.bz2 B
+		#mv fileC.tar.xz C
+		
+		각 디렉토리에(A,B,C)에서 tar 명령어를 이용하여 압축과 아카이브 해제를
+		동시에 진행하여 원본 파일을 확인 하기
+		#cd A
+		-> fileA.tar.gz 
+		
+		#tar xvfz fileA.tar.gz
+		-> file1 file2 file3
+		
+		//tar xvf [파일명].tar.[압축확장자]
+		  해제할때는 압축 유틸리티를 의미하는 (z,j,J)사용하지 않아도
+		  프로그램이 자동으로 파일 형식에 맞게 옵션을 선택하여 지정한다.
+		  즉, 옵션을 사용하지 않아도 원본 파일을 확인 할 수 있다.
+		  
+			프로그램		확장자		tar옵션
+	        gzip			.gz			-z 
+			bzip2			.bz2		-j
+			xz				.xz			-J
+			
+			
+			fileA.tar.gz 해당 압축파일을 생성하기위한 명령어로 올바른 것을 고르시오.
+			
+				문제 : #tar cvf[ ] fileA.tar.gz 파일1 파일2
+				보기   (1)z  (2)j (3)J (4)g
+			
+			
+			
+			
+			
+			
+			

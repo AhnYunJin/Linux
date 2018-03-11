@@ -1,0 +1,422 @@
+		
+		
+DNS (Domain Name Service)
+	- 내용이 복잡해서 단시간내에 이해하고 설정하기가
+	  매우 어렵다.	
+	
+	- PPT 내용은 참고로 읽어도 큰 문제가 없는 내용이
+	  대부분이다.
+	
+	컴퓨터에 접속
+		컴퓨터 -> IP주소 사용
+		사람   -> 도메인 주소 사용 (호스트네임)
+		
+	리졸빙(Resolving)
+	- 사람이 사용하는 도메인주소를 컴퓨터가 사용하는 IP주소로
+	  변환하는 작업
+	  
+	nslookup - 네임서버(DNS서버) 질의용 프로그램
+	#yum -y install bind-utils
+	// 질의용 프로그램 설치 (nslookup, host, dig)
+	
+	#nslookup
+	> [도메인]
+	// 해당 [도메인]에 해당하는 IP주소를 확인한다.
+	
+	> server
+	// [도메인 주소]에 해당하는 IP주소를 알려주는 DNS서버의
+	   IP주소를 확인한다.
+	   
+	// 시스템에서 도메인 주소를 사용할 경우, 해당 도메인
+	   주소에대한 IP주소를 알려주는 네임서버를 로컬네임서버
+	   라고한다.
+	  
+	/etc/hosts 파일 테스트	
+	(1) firefox를 이용하여 www.nate.com 접속
+	    #yum -y install firefox
+		작업표시줄 -> 프로그램 -> 인터넷 -> firefox
+		주소창 -> www.nate.com
+		
+		접속 가능 / 네트워크 문제 없음
+	
+	(2) 로컬네임서버가 동작하지 못하도록 /etc/resolv.conf
+	    파일의 내용을 주석처리
+		#nameserver 8.8.8.8		
+		#nameserver 8.8.4.4
+
+		firefox 재시작 후, www.nate.com 접속 시도
+		-> 접속 불가능 
+		
+		#nslookup
+		> server 8.8.8.8		// 질의할 DNS서버를 지정
+		> www.nate.com			// IP주소 확인
+		
+		Name:	www.nate.com
+		Address: 120.50.131.112
+	
+	(3) nslookup 통해 확인한 IP주소를 firefox 주소창에 
+	    입력.
+		
+		DNS서비스를 사용하지 않고 접속할 서버의 IP주소를
+		알고 있다면, IP주소를 사용하여 접속이 가능하다.
+		
+	(4) /etc/hosts 파일 사용
+		#vi /etc/hosts
+		[   ip주소   ]  [이름(도메인)]
+		120.50.131.112	www.nate.com
+		
+		Firefox -> www.nate.com 접속 시도 -> 접속 가능
+		
+		도메인을 사용하게되면 DNS서버에 질의하기전에 먼저
+		/etc/hosts 파일을 확인하여, 사용자가 입력한 도메인주소가
+		있는지 확인하고, 없으면 /etc/resolv.conf 파일에 명시되어있는
+		DNS서버에게 질의한다.
+		
+		/etc/hosts -> /etc/resolv.conf
+	
+	(5) /etc/hosts 파일 내용 변경
+		firefox 종료 후 진행
+		
+		#vi /etc/hosts
+		120.50.131.112	www.nate.com		// 기존 내용
+		120.50.131.112	www.naver.com 		// 변경 후
+		
+	    www.nate.com  ->   www.naver.com 
+		firefox -> www.naver.com
+		
+		- 이미지 파일 062번 확인
+		  IP주소 획득 과정
+		  
+			/etc/host.conf	
+				/etc/hosts 와 /etc/resolv.conf 파일 중 먼저 확인할
+				파일을 설정할 수 있다. 기본값은 /etc/hosts 파일이
+				우선순위가 높다.
+		
+		DNS 서버 구성
+		Server-A (Main DNS)
+		#yum -y install bind bind-utils bind-libs bind-chroot
+		
+		bind		- 네임서버 프로그램
+		bind-utils  - 질의용 프로그램 ( nslookup, dig, host )
+		bind-libs   - 네임서버 라이브러리
+		bind-chroot - chroot 환경을 구성하기 위한 파일 제공
+		
+		// yum 에러 발생
+		// yum 명령어 사용 -> /etc/yum.repos.d/*.repo
+		-> baseurl & mirrorlist에 명시된 저장소 주소 확인(도메인)
+		-> 로컬네임서버에게 저장소 주소에대한 IP주소를 질의
+		-> 응답받은 IP주소를 이용하여 저장소 서버에 접속
+		-> 패키지 목록 다운 -> 패키지 설치
+		// /etc/resolv.conf 주석 해제
+		
+		/etc/named.conf
+			- 네임 서버 주 설정 파일
+		/etc/named.rfc1912.zones
+			- 존(zone/영역) 정보를 설정하기 위한 파일
+			  zone - 해당 네임 서버가 관리하는 도메인  
+		/var/named/ 
+			- 네임 서버가 사용하는 데이터 베이스 파일이 위치하는
+			  디렉토리
+			  
+		chroot ( change root )
+		- 프로그램이 인식하는 최상위 디렉토리를 변경하여 보안을
+		  강화하는 방법 
+		
+		네임서버 패키지를 설치를하게되면, named 계정이 생성되고
+		named 계정으로 DNS 데몬(named)이 동작한다. 
+		
+		만약, DNS서버 취약점을 이용하여 DNS서버에 접속을 하게되면
+		가장 처음 위치하는 디렉토리는 DNS서버 데몬을 동작시킨
+		계정의 홈디렉토리이다.
+		
+		#cat /etc/passwd | grep "named"
+		named:x:25:25:Named:/var/named:/sbin/nologin
+		
+		현재경로 -> /var/named 
+		로그인 불가능한 쉘 -> /sbin/nologin
+		
+		기본적으로 로그인할 수 없는 쉘이 지정이되었지만, 이러한
+		설정을 우회해서 쉘을 사용할 있다 하더라도 /var/named/
+		디렉토리에 위치한 chroot 디렉토리가 최상위 디렉토리가되어
+		해당 서버에 큰 피해를 줄수가 없다.
+		
+		관리자가 편집하는 파일의 경로
+		- /etc/named.conf
+		
+		프로그램이 사용하는 파일의 경로
+		- /var/named/chroot/etc/named.conf
+		
+		네임서버가 동작할때 원본 설정 파일을 chroot 디렉토리아래
+		복사하여 사용한다.
+        
+		root 도메인 정보 최신화
+		#yum -y install wget
+		#wget [다운로드경로(URL)]
+		- 인터넷상에 위치한 파일을 로컬로 다운로드 할 수 있는 프로그램
+		
+		#wget ftp://rs.internic.net/domain/named.root
+		// 도메인을 관리하는 기관 (internic)에서 제공하는
+		   최신 root 도메인 정보가 저장되어있는 파일
+		   
+		#mv ./named.root /var/named/named.ca
+		// 덮어쓰기 진행. 기존에 있던 named.ca 파일은 기본적으로
+		   제공되어있는 root 도메인 정보 파일이다.
+		   
+		#cat -n /var/named/named.ca   
+		// 12, 13번행에 마지막 업데이트 날짜 확인 (2017-11-16)
+		
+		주 설정 파일 수정
+		#vi /etc/named.conf
+		11번행  listen-on port 53 { any; };
+				// DNS서버가 사용하는 포트번호 53번
+				// 53번 포트로 접속을 허용할 IP주소
+				// any는 모든 IP주소를 의미함.
+		
+		12번행  listen-on-v6 port 53 { none; };
+				// IPv6 주소를 이용하여 53번 포트 접속은 차단
+		
+		17번행  allow-query     { any; };
+				// 해당 DNS서버로 질의할 수 있는 클라이언트의 IP주소
+		
+		18번행  recursion yes;
+				// 해당 DNS서버가 관리하는 영역(도메인)이 아닌 경우
+				// root 도메인을 관리하는 DNS서버에게 클라이언트의
+				   요청을 전달하여 root DNS서버가 제공한 IP주소를
+				   전달 하도록한다.
+		
+		도메인 영역 생성
+		#vi /etc/named.rfc1912.zones
+		제일 하단에 추가
+		
+		dongsam.com 대신 자신이 생상하고 싶은 도메인 사용.
+		(대문자X,특수문자X)
+		
+		zone "dongsam.com" IN {
+			type master;
+			file "dongsam.zone";
+			allow-update { none; };
+		};
+		
+		zone - 해당 네임 서버가 관리하는 도메인
+		type master - 해당 도메인에대한 모든 정보를 제공하는 DNS서버
+		file [파일명] - 도메인에대한 IP주소를 정보를 저장하고있는
+		                데이터 베이스 파일
+		allow-update - 도메인 정보를 원격에서 업데이트를 할 경우,
+		               허용할 IP주소. 
+		
+		데이터 베이스 파일 생성
+		#cp /var/named/named.empty /var/named/dongsam.zone
+		// 기존에 내용이 미리 작성되어있는 파일을 복사하여 편집
+		
+		#vi /var/named/dongsam.zone
+		
+		설정 파일 문법 확인
+		#named-checkconf /etc/named.rfc1912.zones
+		-> 정상일 경우 출력메세지 없음
+		
+		#chown root:named /var/named/dongsam.zone
+		// named 데몬이 해당 파일에 접근이 가능 하도록 소유권 변경
+		
+		#service named restart
+		
+		테스트
+		#nslookup
+		> server 100.100.100.110
+		// 로컬네임서버의 IP주소를 일시적으로 지정
+		> www.dongsam.com
+		
+		049번 ~ 051번 DNS 구조
+		089번 ~ 092번 데이터 베이스 파일 
+		093번 ~ 095번 리소스 레코드
+		
+		DNS계층 구조
+		- 주소(경로) 표현 방법
+		
+		도메인 주소
+		- 최상위 루트 도메인으로부터 하위 도메인을 오른쪽에서 왼쪽으로
+		  해석하며, 왼쪽으로 갈 수록 하위 도메인을 나타낸다.
+		- 각 도메인은 . 으로 구분한다.
+		<--------------------
+		www . dongsam . com .	(FQDN)
+		
+		------------------------------>
+		/etc/sysconfig/network-scripts/
+	
+		도메인 주소 사용 예 (www.dongsam.com)
+		(1) /etc/hosts 파일 확인
+			-> 보통은 도메인에대한 정보가 없다.
+		
+		(2) /etc/resolv.conf 파일 확인
+			-> 로컬 네임 서버 주소
+			-> nameserver 100.100.100.110 	// Server-A
+		
+		(3) Server-A DNS한테 www.dongsam.com에 대한 IP주소 질의
+		
+		(4) named 데몬이 사용자 요청을 처리하기 위해 named.conf 확인
+			-> allow-query, listen-on-port 설정을 확인 (any)
+			-> 누구나 질의가 가능한 DNS서버
+		
+		(5) /etc/named.rfc1912.zones 파일에 자신이 관리하는 도메인에
+		    클라이언트가 요청한 도메인이 있는지 확인
+			-> zone "dongsam.com" IN {	
+			-> 정보가 있으면 옵션을 확인 ( file "dongsam.zone" )
+			-> 데이터 베이스 파일 확인
+			-> www 	IN  A  100.100.100.110
+			-> www에 해당하는 IP주소를 사용자에게 전달
+		
+		 #vi /etc/named.conf
+		 20번행         dnssec-enable no;
+		 21번행         dnssec-validation no;
+		 // 자신이 관리하는 도메인외에 다른 도메인에 대한
+		    정보를 클라이언트에게 제공해주기 위해서 해당 설정을
+			변경한다.
+		
+		#service named restart
+		#nslookup
+		> server 100.100.100.110
+		> www.nate.com
+		
+		#vi /etc/resolv.conf
+		nameserver 100.100.100.110
+		nameserver 100.100.100.120
+		
+		로컬네임서버를 Server-A로 변경하여 임의로 만든 (dongsam.com)
+		도메인에 대한 IP를 제공받을 수 있도록 한다.
+		
+		DNS 부하 분산
+			Server-B, Client-Linux 가상 머신 실행 후, 진행
+			web구성이 되어있지 않아, ping을 이용하여 테스트
+			
+			#vi /var/named/dongsam.zone
+			~~~~~~~~ 생략 ~~~~~~~~~~~~~
+			www IN 	A 100.100.100.110
+			www IN  A 100.100.100.120
+			www IN  A 100.100.100.130
+			~~~~~~~~ 생략 ~~~~~~~~~~~~~
+			
+			www 에대한 IP주소를 추가하여 클라이언트에게 제공할
+			IP주소가 요청에따라 달라진다.
+		
+			#service named restart
+			
+			#ping -c 3 www.dongsam.com			// ( 110 )
+			#ping -c 3 www.dongsam.com  		// ( 120 )
+			#ping -c 3 www.dongsam.com  		// ( 130 )
+			
+			// ping에 응답한 컴퓨터의 IP주소 확인
+			
+			Server-A, Server-B, Client-Linux
+			#vi /etc/resolv.conf
+			nameserver 100.100.100.110
+			nameserver 100.100.100.120
+			
+			#vi /etc/sysconfig/network-scripts/ifcfg-eth0  (ifcfg-bond0)
+			~~~~~~~~~생략~~~~~~~~
+			DNS1=100.100.100.110
+			DNS2=100.100.100.120
+			~~~~~~~~~생략~~~~~~~~
+			
+			Server-A, Server-B, Client-Linux
+			#ping -c 3 ftp.dongsam.com
+			// ftp     IN      A       100.100.100.110
+			
+		백업DNS서버 구성 
+			
+			Server-A (Main) <--> Server-B (Backup)
+			
+			- 백업 DNS서버는 메인 DNS서버로 부터 도메인 대한
+			  정보를 제공할 데이터 베이스 파일을 다운받아 사용한다.
+			  
+			Server-B
+			#yum -y install bind bind-chroot bind-libs bind-utils
+			#vi /etc/named.conf
+			11번행  listen-on port 53 { any; };
+			12번행  listen-on-v6 port 53 { none; };
+			17번행  allow-query     { any; };
+			18번행  recursion yes;
+			
+			#vi /etc/named.rfc1912.zones		// 하단에 추가
+			zone "dongsam.com" IN {
+				type slave;
+				file "slaves/dongsam.zone";
+				masters { 100.100.100.110; };
+				allow-update { none; };
+			};
+			
+			// tyep slave 
+			   해당 도메인에 대한 정보를 메인 master (Server-A)로부터
+			   제공받아 동작한다.
+			// master 
+               도메인에 대한 정보를 제공해줄 master DNS서버의 IP주소
+
+			Server-A
+			#vi /etc/named.rfc1912.zones
+			zone "dongsam.com" IN {
+			~~~~~~~생략~~~~~~~~~~~~
+			allow-transfer { 100.100.100.120; };
+			};
+			   
+			allow-transfer - 해당 도메인에대한 정보를 요청할때
+			전송을 허락해줄 컴퓨터의 IP주소
+			
+			#service named restart  
+			// Server-A -> Server-B 순으로 데몬으로 재시작
+			
+			#cat /var/log/messages | tail -2
+			100.100.100.120#43453: transfer of 'dongsam.com/IN': AXFR started
+			100.100.100.120#43453: transfer of 'dongsam.com/IN': AXFR ended
+			
+			Server-B
+			#cd /var/named/slaves
+			#ls 
+			dongsam.zone				// Server-B가 사용할 데이터 베이스
+			                               파일
+								
+											
+			Server-A
+			#service named stop
+			
+			Server-B
+			#vi /etc/named.conf
+			20번행         dnssec-enable no;
+			21번행         dnssec-validation no;
+			// 자신이 관리하는 도메인외에 다른 도메인에 대한
+			   정보를 클라이언트에게 제공해주기 위해서 해당 설정을
+			   변경한다.
+				
+			#service named restart
+			
+			Server-A, B, Client-Linux
+			#ping ftp.dongsam.com
+			#ping google.com
+			
+			Client-Win
+			DNS서버 -> 1차 100.100.100.110 
+			           2차 100.100.100.120 
+			
+			Server-A & Server-B
+			#chkconfig named on
+			
+			
+			
+		
+
+			
+			
+			
+			
+		
+			
+			
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		

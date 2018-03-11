@@ -1,0 +1,376 @@
+
+
+	RAID ( Redundant Array of Inexpensive / Independent Disk )
+	- 물리 디스크 여러개를 하나의 논리 디스크(볼륨)로 만들어 사용하는 방법
+	
+	- 초창기 RAID
+		- 초기에는 Disk 용량이 크기 않아서, 업그레이드 후
+		  폐기하기엔 아깝고 그렇다고 단독으로 쓰기에는 용량이
+		  부족한 (Inexpensive) 저장 장치를 재활용할 목적으로
+		  RAID를 구성하였다.
+		  
+	- 현재 RAID 
+		- 저장 장치(H/W)기술이 발전하여 용량이 점차 커져 용량
+		  증설 목적아니라 데이터 보호, 성능 개선을 위해 사용한다
+		  해서 독립적인/단독으로 사용가능한 (Independent) 저장
+		  장치로 해석이된다.
+		  
+	RAID 구성 종류
+		Hardware RAID
+			- RAID 컨트롤러에 의해 구성된다.
+			- RAID 컨트롤러에는 독자적인 메모리와 프로세서
+			  가지고 있다.
+			- 안정적이며, 성능이 매우 우수하다.
+		
+		Software RAID
+			- RAID 컨트롤러 없이 운영체제에서 지원하는 방식
+			- H/W RAID 비해 성능이 속도가 떨어진다.
+			- 저렴한 비용으로 H/W RAID 동일하게 RAID를 구성할 수 있다.
+			
+		Linear RAID
+			- 선형 RAID
+			- 여러개의 저장장치를 하나의 큰 논리 저장 장치(볼륨)
+			  으로 만든다.
+			- 첫 번째 디스크가 완전히 채워지면 순차적으로 다음
+			  디스크에 데이터가 저장된다.
+			- 성능면에서 별다른 장점이 없으며, 하나의 디스크라도
+			  고장(장애)이 발생하면 전체 볼륨을 사용할 수 가 없다.
+			  (신뢰성X, 안정성X)
+			- 최소 2개이 상의 디스크를 필요로 한다.
+			- 디스크의 총 용량과, RAID를 구성한 볼륨의 총 용량이 같다.
+	
+	RAID 사전 준비
+	(1) VM 초기화
+		- 스냅샷을 이용하여 Server-A를 초기화
+	(2) 0.25GB Disk 총 9개 추가
+	(3) 재부팅
+	(4) #fdisk -l 명령어 이용하여 Disk 9개 추가 확인
+	    - /dev/sda 를 제외한 /dev/sdb ~ /dev/sdj 확인
+	(5) Linear RAID를 사용할 디스크 파티션 생성 (/dev/sdb, /dev/sdc)
+		#fdisk /dev/sdb						// /dev/sdc 동일하게 적용
+		"n" 새로운 파티션
+		"p" 주파티션
+		"1" 1번
+		"enter" 디스크의 시작 지점부터
+		"enter" 마지막 지점까지 파티션 생성
+		"t" 파티션 타입을 변경
+		"fd"  Linux raid autodetect 
+			  // RAID 구성을 위해 사용되는 파티션
+			  // 참고 - 8e -> Linux LVM  (논리 볼륨 매니저) 
+                        83 -> Linux		 (기본 타입)
+					    82 -> Linux swap (SWAP 메모리)
+		"w" 저장 후 종료
+	(6) 파티션 타입 확인
+		#fdisk -l /dev/sdb /dev/sdc
+		ex) 
+		Id  System
+		fd  Linux raid autodetect
+		
+	(7) RAID 볼륨 생성
+	#mdadm --create [볼륨명] --level [레벨] --raid-devices=[장치수] [장치명1] [장치명2] ... [장치명N]
+	
+	RAID 구성 확인
+	#mdadm --detail --scan			// 현재 시스템의 모든 RAID 정보 확인
+	#mdadm --detail [볼륨명] 		// 해당 볼륨의 RAID 정보 확인
+	
+	RAID 정보 파일
+	/proc/mdstat		// 자동으로 생성되어있으며, RAID 볼륨에대한 정보가
+	                       저장되어있는 파일
+	/etc/mdadm.conf 	// 사용자가 생성해야 하며, 구성한 RAID 볼륨명과
+	                       설정에 관한 UUID정보가 저장되어있는 파일
+		
+	RAID 구성 후 설정 적용
+	#mdadm --detail --scan > /etc/mdadm.conf
+	// 해당 명령어를 사용하지 않고 재부팅을 할경우 지정한 볼륨명이 변경되어
+	   작업에 혼선이 올 수 있다. ex) /dev/md127 , /dev/md128 ...
+	   
+	// 볼륨명 지정 방법 -> /dev/md 뒤에 숫자가 올 수 있다.
+							ex) /dev/md9, /dev/md200 
+		구성할 RAID Level 번호와 볼륨의 번호를 동일하게 하여
+		알아보기 쉽게 설정한다.
+		
+							ex) RAID 1로 구성된 볼륨의 이름 -> /dev/md1
+								RAID 6으로 구성된 볼륨의 이름 -> /dev/md6
+							
+	Linear RAID 볼륨 생성
+	#mdadm --create /dev/md9 --level=linear --raid-devices=2 /dev/sdb1 /dev/sdc1
+	// /dev/md9라는 볼륨명을 가진 Linear RAID를 2개의 저장 장치 /dev/sdb1, /dev/sdc1 을 이용하여 생성하겠다.
+	
+	mdadm: array /dev/md9 started.
+	// 볼륨 생성 완료 (사용 가능)
+
+	(8) 파일 시스템 생성
+	    #mkfs -t ext4 /dev/md9
+		// 생성한 볼륨에 데이터가 ext4 형식으로 저장이 되도록 파일 시스템 생성
+	
+	(9) 마운트 포인트 생성 및 마운트
+		#mkdir /RAID-Linear
+		#mount /dev/md9 /RAID-Linear
+	
+	(10) 마운트 확인
+		 #df -h
+		 Filesystem      Size  Used Avail Use%  Mounted on
+		 /dev/md9        488M  2.3M  460M   1%  /RAID-Linear
+		
+		// 약 250MB(0.25GB) 디스크를 2개를 하나의 볼륨으로 만들어 용량이
+		   500MB가되어 출력되는 것을 확인
+		
+	(11) RAID 구성 확인
+		 #mdadm --detail /dev/md9
+         // 구성한 RAID 레벨, 볼륨의 크기, 상태 , 사용된 장치를 확인
+	
+	(12) blkid를 이용하여 UUID 확인 후 /etc/fstab 등록
+		 #blkid /dev/md9
+	     #vi /etc/fstab
+		 UUID=[UUID값] /RAID-Linear ext4 defaults 0 0
+	
+	(13) 설정 RAID 볼륨 정보(볼륨명)를 저장 하기 위해 아래 명령어 사용
+	     #mdadm --detail --scan > /etc/mdadm.conf
+		 
+	RAID 0
+		- 스트라이핑 RAID
+		- 데이터 여러개의 디스크에 나누어 쓰고 읽어들임으로써 데이터를
+		  중복해서 기록하지 않기때문에, 가장 높은 입출력 성능을 제공한다. 
+		  (가장 큰 장점)
+		- RAID 0 총 용량은 구성한 디스크의 총 용량과 같다.
+		- 데이터 보호 기능이 없다 ( Fault-Tolerant 기능이 없다 )
+		  
+		  Fault-Tolerant ( 결함 감내 / 장애 내성 )
+		  - 결함(Fault)이나 고장(Failure)이 발생하여도 정상적 혹은
+			부분적으로 기능을 수행 할 수 있는 능력/환경
+		
+		ex) 1TB DISK 와 10TB DISK를 이용하여 RAID를 구성 했을때
+			Linear RAID -> 해당 볼륨의 총 용량은? 11TB 
+			RAID 0      -> 해당 볼륨의 총 용량은? 2TB
+			
+			RAID 권고 사항
+			- RAID를 구성할때 사용하는 Disk는 동일한 제조사, 동일한 모델,
+			  동일한 크기(용량/성능)를 가진 Disk로 구성하는 것을 추천한다.
+			     
+	RAID 0 ( /dev/sdd /dev/sde )
+	#fdisk /dev/sdd 				// /dev/sde 에도 동일하게 적용
+	"n" 새로운 파티션
+	"p" 주파티션
+	"1" 1번
+	"enter" 처음부터
+	"enter" 끝까지 사용하여 파티션 생성
+	"t" 	타입변경
+	"fd" 	레이드용으로 변경
+	"w"		저장 후 종료
+	
+	#fdisk -l /dev/sdd /dev/sde
+	// 파티션 테이블 확인 ( ID -> fd )
+	#mdadm --create /dev/md0 --level=0 --raid-devices=2 /dev/sdd1 /dev/sde1
+	// /dev/md0 볼륨을 RAID 0으로 구성하고 2개의 장치 /dev/sdd1 /dev/sde1을 
+	   사용한다.
+	#mkfs -t ext4 /dev/md0	// 파일 시스템 생성
+	#mkdir /RAID-0			// 마운트 포인트
+	#mount /dev/md0 /RAID-0	// 마운트
+	#blkid /dev/md0			// UUID 확인
+	#vi /etc/fstab			// UUID 형태로 등록
+	#mdadm --detail --scan > /etc/mdadm.conf	// 설정 적용
+	#mdadm --detail /dev/md0	// 구성 확인 ( RAID Level, Status, Size ... )
+	
+	RAID 1
+		- 미러링 RAID
+		- 총 Disk 용량의 50%만 사용이 가능
+		- 데이터 여러번 기록이되면서 걸리는 시간때문에 성능이 감소
+		- 한 개의 디스크가 도장이나면 볼륨의 다른 디스크에서 데이터를 사용
+		  ( Fault-Tolerant 기능 제공 )
+		
+	1. /dev/sdf, /dev/sdg 디스크를 이용하여 RAID 1 구성해보기
+	2. 볼륨 생성 조건
+		- 볼륨명 : /dev/md1			레벨 	: 1 	
+		- 장치 수 : 2   			장치명  : /dev/sdf1 /dev/sdg1
+		볼륨 생성 시 나오는 메세지 (부팅 장치로 사용할 수 없다는 메세지)가
+		출력된 y (yes)입력하여 무시하고 진행
+	3. 마운트 포인트 : /RAID-1
+	4. 파일 시스템 : ext4
+	5. UUID 형식으로 /etc/fstab 등록
+	6. 설정 적용 한 후, 설정 확인하기
+	   - 볼륨의 용량, 레벨, 상태 등
+	   
+	RAID 5
+	- RAID 1 처럼 데이터 결함도 허용하면서, RAID 0 처럼 공간 효율성도
+	  좋은 방식
+	- 최소 3개 이상의 DISK가 필요하며, 보통 5개 이상의 DISK로 구성한다.
+	  (디스카가 많아 질 수 록 볼륨 용량도 커짐)
+	- Disk 장애가 발생 시 패리티(Parity)를 이용하여 데이터 복구한다.
+	- 각 Disk 용량 1TB 이고, 4개의 Disk를 사용하여 RAID 5를 구성하면,
+	  3TB만 사용이 가능하다. ( HDD 개수 - 1 = 볼륨의 총 용량, -1 만큼 패리티 )
+	  
+	  패리티 (Parity) 
+		- 디스크 장애 발생 시 데이터를 재구축하는데 사용할 수 있는 계산된 값
+		
+		
+	RAID 5 패리티 사용 예
+		EX) 4개의 DISK로 구성된 RAID 5 볼륨
+		
+		데이터 정보 000 111 101 010
+		데이터 저장 방향 ---------> 
+		패리티 : ★
+		
+	1) 레이드5 볼륨 구성
+	   ---------------->
+	   A		B		C		D
+	   0		0		0		★
+	   1		1		★		1
+	   1		★		0		1 
+	   ★		0		1		0
+	   
+	2) 패리티 값 계산 (각 Disk 값을 XOR 연산을 하여 결정 한다.)
+	---------------->
+	A		B		C		D		
+	0		0		0	   (0)			
+	1		1	   (1)		1
+	1	   (0)		0		1 
+   (1)      0		1		0
+	
+		XOR
+		A	B
+		0	0 -> 0
+		0	1 -> 1 		두 값이 다르면 1, 같으면 0
+		1	0 -> 1
+		1 	1 -> 0 
+	
+	3. 디스크 고장(C) -> 디스크 교체
+	---------------->
+	A		B		C		D	
+	0		0		X	   (0)	
+	1		1	    X		1
+	1	   (0)		X 		1 
+   (1)      0		X		0
+	
+	4. 교체 후 리빌딩 과정 (XOR)
+	---------------->
+   	A		B		C		D	
+	0		0	   [0]	   (0)		
+	1		1	   [1]		1	
+	1	   (0)	   [0] 		1 	
+   (1)      0	   [1]		0	
+	
+	복구한 C DISK DATA - 0101
+	
+	RAID 5 구성 실습
+		대상 장치 : /dev/sdh /dev/sdi /dev/sdj
+		볼륨명 : /dev/md5
+		레벨   : 5
+		마운트 포인트 : /RAID-5			파일시스템 : ext4 
+		UUID 형식으로 fstab 등록
+		볼륨명 변경되지 않도록 설정
+		
+		구성 완료 후 해당 볼륨의 총용량 및 정보 확인하기
+		
+		다음 실습 환경 구성
+			#cp -r /usr /RAID-1 &			// 복사 시 에러메세지 무시
+			#cp -r /usr /RAID-5 &			
+		
+		//실제 데이터를 사용할 수 있는지를 확인 하기위해 임의의 파일을 볼륨과 연결된
+		  디렉토리에 복사 
+	
+	장애 테스트		Fault-Tolerant	Disk장치명					Workstation Disk번호
+	RAID-Linear			X			/dev/sdb /dev/sdc			2, 3 
+	RAID-0				X 			/dev/sdd /dev/sde			4, 5 	
+	RAID-1				O			/dev/sdf /dev/sdg			6, 7
+	RAID-5 				O			/dev/sdh /dev/sdi /dev/sdj 	8 ,9 ,10
+	
+	2, 4, 6, 8번 디스크를 제거 후 재부팅
+	#df -h
+	실제 마운트 되어있는 볼륨은 어떠한 RAID Level로 구성되어있는지 확인
+	
+	복구 및 재생성 과정
+		사전준비 
+			- 디스크 (0.25GB) 4개 추가하고, 재부팅 진행
+			- 각 디스크에 파티션 생성 (fd)
+				#fdisk /dev/sdb
+				#fdisk /dev/sdd
+				#fdisk /dev/sdf
+				#fdisk /dev/sdh
+	
+	RAID-Linear, RAID-0 (Fault-Tolerant X) 볼륨을 제거하고 새롭 생성
+	
+        #mdadm --stop /dev/md9
+		#mdadm --stop /dev/md0		// 볼륨 중지
+		
+		#mdadm --create /dev/md9 --level=linear --raid-devices=2 /dev/sdb1 /dev/sdc1
+		Continue creating arry? y  // y입력
+		
+		// 기존에 /dev/md9 에포함되어있는 /dev/sdc1를 사용하기위해 "Y" 입력
+		
+		#mdadm --create /dev/md0 --level=0 --raid-devices=2 /dev/sdd1 /dev/sde1
+		Continue creating arry? y  // y입력
+		
+		#mkfs -t ext4 /dev/md9
+		#mkfs -t ext4 /dev/md0
+		
+		#mount /dev/md9 /RAID-Linear
+		#mount /dev/md1 /RAID-0
+		
+		#df -h
+		// 새롭게 볼륨을 구성하는 작업으로 기존에 데이터가 있었다 하더라도
+		   모두 사라지며, 파일 시스템을 재 생성 하였기때문에 UUID가변경된다.
+		   즉, 다시 해당 볼륨을 사용 하기 위해서는 /etc/fstab을 수정해야한다.
+		   (지금은 생략)
+		   
+		RAID-1, RAID-5 (Fault-Tolerant O) 볼륨에 새로운 디스크 교체하여
+        데이터 복사 및 리빌딩
+
+	
+		데이터 복구 과정 보기		
+		#mdadm /dev/md1 --add /dev/sdf1 		// 교체 작업 후 사용 
+		#mdadm /dev/md5 --add /dev/sdh1 
+		   
+		   
+		세션 -1									세션-2
+		#watch -d -n 0.1 "cat /proc/mdstat"     
+												mdadm /dev/md1 --add /dev/sdf1
+		
+		
+		RAID 10 구성 방법
+1번
+	#mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc1 
+	#mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sdd1 /dev/sde1
+	#mdadm --create /dev/md10 --level=0 --raid-devices=2 /dev/md0 /dev/md1
+
+2번 
+	#mdadm --create /dev/md10 --level=10 --raid-devices=4 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 
+	
+	2번 정답
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+		 
+		 
+		 
+		 
+	
+	
+	
+	
+
+
+	
+		
+		
+		
+		
+		
+		  
+	
+	
+	
+	
+	
+	
+	
+									
